@@ -15,11 +15,11 @@ namespace Sumuqan {
         public lowerLeg: BABYLON.Mesh;
         public upperLeg: BABYLON.Mesh;
 
-        public footPos: BABYLON.Vector3;
-        public hipPos: BABYLON.Vector3;
-        public right: BABYLON.Vector3;
-        public up: BABYLON.Vector3;
-        public forward: BABYLON.Vector3;
+        public footPos: BABYLON.Vector3 = BABYLON.Vector3.Zero();
+        public hipPos: BABYLON.Vector3 = BABYLON.Vector3.Zero();
+        public right: BABYLON.Vector3 = new BABYLON.Vector3(1, 0, 0);
+        public up: BABYLON.Vector3 = new BABYLON.Vector3(0, 1, 0);
+        public forward: BABYLON.Vector3 = new BABYLON.Vector3(0, 0, 1);
 
         constructor() {
             this.foot = new BABYLON.Mesh("foot");
@@ -27,7 +27,7 @@ namespace Sumuqan {
             this.upperLeg = new BABYLON.Mesh("upper-leg");
         }
 
-        public async initialize(): Promise<void> {
+        public async instantiate(): Promise<void> {
             this.foot = BABYLON.MeshBuilder.CreateLines(this.foot.name, { points: [BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, 0, this.footLength)] });
             this.foot.rotationQuaternion = BABYLON.Quaternion.Identity();
             this.lowerLeg = BABYLON.MeshBuilder.CreateLines(this.lowerLeg.name, { points: [BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, 0, this.lowerLegLength)] });

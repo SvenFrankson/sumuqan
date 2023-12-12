@@ -16,10 +16,24 @@ declare namespace Sumuqan {
         up: BABYLON.Vector3;
         forward: BABYLON.Vector3;
         constructor();
-        initialize(): Promise<void>;
+        instantiate(): Promise<void>;
         private _upperLegZ;
         private _lowerLegZ;
         private _kneePos;
         updatePositions(): void;
+    }
+}
+declare namespace Sumuqan {
+    class Walker extends BABYLON.Mesh {
+        leftFootTarget: BABYLON.Mesh;
+        rightFootTarget: BABYLON.Mesh;
+        body: BABYLON.Mesh;
+        leftLeg: Leg;
+        rightLeg: Leg;
+        private _stepping;
+        constructor(name: string);
+        initialize(): Promise<void>;
+        private step;
+        private _update;
     }
 }
