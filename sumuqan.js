@@ -57,7 +57,6 @@ var Sumuqan;
             super(name);
             this._stepping = 0;
             this._update = () => {
-                this.position.z += 1 / 60;
                 BABYLON.Vector3.TransformCoordinatesToRef(new BABYLON.Vector3(-0.5, 0, 0), this.body.getWorldMatrix(), this.leftLeg.hipPos);
                 BABYLON.Vector3.TransformCoordinatesToRef(new BABYLON.Vector3(0.5, 0, 0), this.body.getWorldMatrix(), this.rightLeg.hipPos);
                 this.leftLeg.right = this.right;
@@ -81,18 +80,19 @@ var Sumuqan;
                 }
                 this.leftLeg.updatePositions();
                 this.rightLeg.updatePositions();
+                let bodyPos = this.leftLeg.footPos.add(this.rightLeg.footPos).scaleInPlace(0.5);
+                bodyPos.addInPlace(this.up.scale(1.3));
+                this.body.position.copyFrom(bodyPos);
             };
-            this.body = BABYLON.MeshBuilder.CreateSphere("body", { diameter: 1 });
-            this.body.parent = this;
-            this.body.position.y = 1;
+            this.body = BABYLON.MeshBuilder.CreateSphere("body", { diameterX: 1, diameterY: 1, diameterZ: 1.5 });
             this.leftLeg = new Sumuqan.Leg();
             this.rightLeg = new Sumuqan.Leg();
             this.rightFootTarget = new BABYLON.Mesh("right-foot-target");
             this.rightFootTarget.parent = this;
-            this.rightFootTarget.position.x = 1.1;
+            this.rightFootTarget.position.x = 0.6;
             this.leftFootTarget = new BABYLON.Mesh("left-foot-target");
             this.leftFootTarget.parent = this;
-            this.leftFootTarget.position.x = -1.1;
+            this.leftFootTarget.position.x = -0.6;
         }
         async initialize() {
             this.leftLeg.instantiate();
@@ -106,7 +106,7 @@ var Sumuqan;
                 let destination = target.clone();
                 //let destinationNorm = targetNorm.clone();
                 let dist = BABYLON.Vector3.Distance(origin, destination);
-                let hMax = Math.min(Math.max(0.3, dist * 0.5), 0.1);
+                let hMax = Math.min(Math.max(0.5, dist), 0.1);
                 let duration = Math.min(0.45, dist);
                 let t = 0;
                 let animationCB = () => {
