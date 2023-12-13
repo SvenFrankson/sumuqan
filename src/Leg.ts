@@ -10,7 +10,7 @@ namespace Sumuqan {
         public footLength: number = 0.5;
         public lowerLegLength: number = 1;
         public upperLegLength: number = 1;
-        public footThickness: number = 0.3;
+        public footThickness: number = 0.23;
 
         public foot: BABYLON.Mesh;
         public lowerLeg: BABYLON.Mesh;
@@ -18,6 +18,7 @@ namespace Sumuqan {
 
         public footPos: BABYLON.Vector3 = BABYLON.Vector3.Zero();
         public footUp: BABYLON.Vector3 = new BABYLON.Vector3(0, 1, 0);
+        //public footForward: BABYLON.Vector3 = new BABYLON.Vector3(0, 1, 0);
 
         public hipPos: BABYLON.Vector3 = BABYLON.Vector3.Zero();
         public right: BABYLON.Vector3 = new BABYLON.Vector3(1, 0, 0);

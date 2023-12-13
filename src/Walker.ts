@@ -9,6 +9,7 @@ namespace Sumuqan {
         public rightFootTarget: BABYLON.Mesh;
 
         public body: BABYLON.Mesh;
+        public bodyVelocity: BABYLON.Vector3 = BABYLON.Vector3.Zero();
         public leftLeg: Leg;
         public rightLeg: Leg;
         private _stepping: number = 0;
@@ -47,7 +48,7 @@ namespace Sumuqan {
                 let destination = target.clone();
                 let destinationNorm = targetNorm.clone();
                 let dist = BABYLON.Vector3.Distance(origin, destination);
-                let hMax = Math.min(Math.max(0.5, dist), 0.1)
+                let hMax = Math.min(Math.max(1, dist), 0.2)
                 let duration = Math.min(0.8, 2 * dist);
                 let t = 0;
                 let animationCB = () => {
@@ -124,9 +125,15 @@ namespace Sumuqan {
 
             let bodyQuat = BABYLON.Quaternion.Identity();
             Mummu.QuaternionFromYZAxisToRef(this.leftLeg.footUp.add(this.rightLeg.footUp), this.forward, bodyQuat);
-            //BABYLON.Quaternion.SlerpToRef(this.rotationQuaternion, bodyQuat, 0.5, bodyQuat);
-            BABYLON.Quaternion.SlerpToRef(this.body.rotationQuaternion, bodyQuat, 0.02, this.body.rotationQuaternion);
-            this.body.position.copyFrom(bodyPos);
+
+            let feetQuat = BABYLON.Quaternion.Identity();
+            Mummu.QuaternionFromXZAxisToRef(this.rightLeg.foot.absolutePosition.subtract(this.leftLeg.foot.absolutePosition), this.forward, feetQuat);
+
+            BABYLON.Quaternion.SlerpToRef(feetQuat, bodyQuat, 0.5, bodyQuat);
+
+            BABYLON.Quaternion.SlerpToRef(this.body.rotationQuaternion, bodyQuat, 0.05, this.body.rotationQuaternion);
+
+            this.body.position.scaleInPlace(0.9).addInPlace(bodyPos.scale(0.1));
         }
     }
 }
