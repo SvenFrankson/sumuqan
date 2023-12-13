@@ -31,9 +31,11 @@ declare namespace Sumuqan {
     class Walker extends BABYLON.Mesh {
         leftHipAnchor: BABYLON.Vector3;
         rightHipAnchor: BABYLON.Vector3;
+        headAnchor: BABYLON.Vector3;
         leftFootTarget: BABYLON.Mesh;
         rightFootTarget: BABYLON.Mesh;
         body: BABYLON.Mesh;
+        head: BABYLON.Mesh;
         leftLeg: Leg;
         rightLeg: Leg;
         private _stepping;

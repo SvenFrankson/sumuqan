@@ -4,11 +4,13 @@ namespace Sumuqan {
 
         public leftHipAnchor: BABYLON.Vector3 = new BABYLON.Vector3(-0.5, 0, 0);
         public rightHipAnchor: BABYLON.Vector3 = new BABYLON.Vector3(0.5, 0, 0);
+        public headAnchor: BABYLON.Vector3 = new BABYLON.Vector3(0, 0, 0.75);
 
         public leftFootTarget: BABYLON.Mesh;
         public rightFootTarget: BABYLON.Mesh;
 
         public body: BABYLON.Mesh;
+        public head: BABYLON.Mesh;
         public leftLeg: Leg;
         public rightLeg: Leg;
         private _stepping: number = 0;
@@ -20,6 +22,9 @@ namespace Sumuqan {
 
             this.body = BABYLON.MeshBuilder.CreateSphere("body", { diameterX: 1, diameterY: 1, diameterZ: 1.5 });
             this.body.rotationQuaternion = BABYLON.Quaternion.Identity();
+            
+            this.head = BABYLON.MeshBuilder.CreateSphere("head", { diameterX: 0.5, diameterY: 0.5, diameterZ: 0.75 });
+            this.head.rotationQuaternion = BABYLON.Quaternion.Identity();
 
             this.leftLeg = new Leg(true);
             this.rightLeg = new Leg();
@@ -81,6 +86,7 @@ namespace Sumuqan {
         private _update = () => {
             BABYLON.Vector3.TransformCoordinatesToRef(this.leftHipAnchor, this.body.getWorldMatrix(), this.leftLeg.hipPos);
             BABYLON.Vector3.TransformCoordinatesToRef(this.rightHipAnchor, this.body.getWorldMatrix(), this.rightLeg.hipPos);
+            BABYLON.Vector3.TransformCoordinatesToRef(this.headAnchor, this.body.getWorldMatrix(), this.head.position);
 
             this.leftLeg.right = this.right;
             this.leftLeg.up = this.up;
@@ -136,6 +142,8 @@ namespace Sumuqan {
             BABYLON.Quaternion.SlerpToRef(feetQuat, bodyQuat, 0.5, bodyQuat);
 
             BABYLON.Quaternion.SlerpToRef(this.body.rotationQuaternion, bodyQuat, 0.05, this.body.rotationQuaternion);
+            
+            Mummu.QuaternionFromZYAxisToRef(this.forward, this.up, this.head.rotationQuaternion);
 
             this.body.position.scaleInPlace(0.9).addInPlace(bodyPos.scale(0.1));
         }
