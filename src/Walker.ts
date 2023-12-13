@@ -19,6 +19,7 @@ namespace Sumuqan {
             super(name);
 
             this.body = BABYLON.MeshBuilder.CreateSphere("body", { diameterX: 1, diameterY: 1, diameterZ: 1.5 });
+            this.body.rotationQuaternion = BABYLON.Quaternion.Identity();
 
             this.leftLeg = new Leg(true);
             this.rightLeg = new Leg();
@@ -120,6 +121,11 @@ namespace Sumuqan {
 
             let bodyPos = this.leftLeg.footPos.add(this.rightLeg.footPos).scaleInPlace(0.5);
             bodyPos.addInPlace(this.up.scale(1.8));
+
+            let bodyQuat = BABYLON.Quaternion.Identity();
+            Mummu.QuaternionFromYZAxisToRef(this.leftLeg.footUp.add(this.rightLeg.footUp), this.forward, bodyQuat);
+            //BABYLON.Quaternion.SlerpToRef(this.rotationQuaternion, bodyQuat, 0.5, bodyQuat);
+            BABYLON.Quaternion.SlerpToRef(this.body.rotationQuaternion, bodyQuat, 0.02, this.body.rotationQuaternion);
             this.body.position.copyFrom(bodyPos);
         }
     }
