@@ -14,6 +14,7 @@ declare namespace Sumuqan {
         upperLeg: BABYLON.Mesh;
         footPos: BABYLON.Vector3;
         footUp: BABYLON.Vector3;
+        footForward: BABYLON.Vector3;
         hipPos: BABYLON.Vector3;
         right: BABYLON.Vector3;
         up: BABYLON.Vector3;
@@ -33,7 +34,6 @@ declare namespace Sumuqan {
         leftFootTarget: BABYLON.Mesh;
         rightFootTarget: BABYLON.Mesh;
         body: BABYLON.Mesh;
-        bodyVelocity: BABYLON.Vector3;
         leftLeg: Leg;
         rightLeg: Leg;
         private _stepping;

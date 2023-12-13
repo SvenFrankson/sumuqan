@@ -13,7 +13,7 @@ var Sumuqan;
             this.footThickness = 0.23;
             this.footPos = BABYLON.Vector3.Zero();
             this.footUp = new BABYLON.Vector3(0, 1, 0);
-            //public footForward: BABYLON.Vector3 = new BABYLON.Vector3(0, 1, 0);
+            this.footForward = new BABYLON.Vector3(0, 0, 1);
             this.hipPos = BABYLON.Vector3.Zero();
             this.right = new BABYLON.Vector3(1, 0, 0);
             this.up = new BABYLON.Vector3(0, 1, 0);
@@ -49,7 +49,7 @@ var Sumuqan;
             Mummu.QuaternionFromZYAxisToRef(this._lowerLegZ, this.up, this.lowerLeg.rotationQuaternion);
             this._lowerLegZ.scaleInPlace(this.lowerLegLength);
             this.foot.position.copyFrom(this.lowerLeg.position).addInPlace(this._lowerLegZ);
-            Mummu.QuaternionFromZYAxisToRef(this.forward, this.footUp, this.foot.rotationQuaternion);
+            Mummu.QuaternionFromYZAxisToRef(this.footUp, this.footForward, this.foot.rotationQuaternion);
         }
     }
     Sumuqan.Leg = Leg;
@@ -61,7 +61,6 @@ var Sumuqan;
             super(name);
             this.leftHipAnchor = new BABYLON.Vector3(-0.5, 0, 0);
             this.rightHipAnchor = new BABYLON.Vector3(0.5, 0, 0);
-            this.bodyVelocity = BABYLON.Vector3.Zero();
             this._stepping = 0;
             this._update = () => {
                 BABYLON.Vector3.TransformCoordinatesToRef(this.leftHipAnchor, this.body.getWorldMatrix(), this.leftLeg.hipPos);
@@ -92,10 +91,10 @@ var Sumuqan;
                     if (Math.max(dRight, dLeft) > 0.01) {
                         this._stepping = 1;
                         if (dLeft > dRight) {
-                            this.step(this.leftLeg, targetLeft, pickLeft.getNormal(true, true)).then(() => { this._stepping = 0; });
+                            this.step(this.leftLeg, targetLeft, pickLeft.getNormal(true, true), this.forward).then(() => { this._stepping = 0; });
                         }
                         else {
-                            this.step(this.rightLeg, targetRight, pickRight.getNormal(true, true)).then(() => { this._stepping = 0; });
+                            this.step(this.rightLeg, targetRight, pickRight.getNormal(true, true), this.forward).then(() => { this._stepping = 0; });
                         }
                     }
                 }
@@ -127,12 +126,14 @@ var Sumuqan;
             this.rightLeg.instantiate();
             this.getScene().onBeforeRenderObservable.add(this._update);
         }
-        async step(leg, target, targetNorm) {
+        async step(leg, target, targetNorm, targetForward) {
             return new Promise(resolve => {
                 let origin = leg.footPos.clone();
                 let originNorm = leg.footUp.clone();
+                let originForward = leg.footForward.clone();
                 let destination = target.clone();
                 let destinationNorm = targetNorm.clone();
+                let destinationForward = targetForward.clone();
                 let dist = BABYLON.Vector3.Distance(origin, destination);
                 let hMax = Math.min(Math.max(1, dist), 0.2);
                 let duration = Math.min(0.8, 2 * dist);
@@ -144,14 +145,17 @@ var Sumuqan;
                     if (f < 1) {
                         let p = origin.scale(1 - f).addInPlace(destination.scale(f));
                         let n = originNorm.scale(1 - f).addInPlace(destinationNorm.scale(f)).normalize();
+                        let forward = originForward.scale(1 - f).addInPlace(destinationForward.scale(f)).normalize();
                         //let n = this.up;
                         p.addInPlace(n.scale(h * dist * Math.sin(f * Math.PI)));
                         leg.footPos.copyFrom(p);
                         leg.footUp.copyFrom(n);
+                        leg.footForward.copyFrom(forward);
                     }
                     else {
                         leg.footPos.copyFrom(destination);
                         leg.footUp.copyFrom(destinationNorm);
+                        leg.footForward.copyFrom(destinationForward);
                         this.getScene().onBeforeRenderObservable.removeCallback(animationCB);
                         resolve();
                     }

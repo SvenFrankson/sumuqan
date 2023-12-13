@@ -9,7 +9,6 @@ namespace Sumuqan {
         public rightFootTarget: BABYLON.Mesh;
 
         public body: BABYLON.Mesh;
-        public bodyVelocity: BABYLON.Vector3 = BABYLON.Vector3.Zero();
         public leftLeg: Leg;
         public rightLeg: Leg;
         private _stepping: number = 0;
@@ -41,12 +40,14 @@ namespace Sumuqan {
             this.getScene().onBeforeRenderObservable.add(this._update);
         }
 
-        private async step(leg: Leg, target: BABYLON.Vector3, targetNorm: BABYLON.Vector3): Promise<void> {
+        private async step(leg: Leg, target: BABYLON.Vector3, targetNorm: BABYLON.Vector3, targetForward: BABYLON.Vector3): Promise<void> {
             return new Promise<void>(resolve => {
                 let origin = leg.footPos.clone();
                 let originNorm = leg.footUp.clone();
+                let originForward = leg.footForward.clone();
                 let destination = target.clone();
                 let destinationNorm = targetNorm.clone();
+                let destinationForward = targetForward.clone();
                 let dist = BABYLON.Vector3.Distance(origin, destination);
                 let hMax = Math.min(Math.max(1, dist), 0.2)
                 let duration = Math.min(0.8, 2 * dist);
@@ -58,14 +59,17 @@ namespace Sumuqan {
                     if (f < 1) {
                         let p = origin.scale(1 - f).addInPlace(destination.scale(f));
                         let n = originNorm.scale(1 - f).addInPlace(destinationNorm.scale(f)).normalize();
+                        let forward = originForward.scale(1 - f).addInPlace(destinationForward.scale(f)).normalize();
                         //let n = this.up;
                         p.addInPlace(n.scale(h * dist * Math.sin(f * Math.PI)));
                         leg.footPos.copyFrom(p);
                         leg.footUp.copyFrom(n);
+                        leg.footForward.copyFrom(forward);
                     }
                     else {
                         leg.footPos.copyFrom(destination);
                         leg.footUp.copyFrom(destinationNorm);
+                        leg.footForward.copyFrom(destinationForward);
                         this.getScene().onBeforeRenderObservable.removeCallback(animationCB);
                         resolve();
                     }
@@ -109,10 +113,10 @@ namespace Sumuqan {
                 if (Math.max(dRight, dLeft) > 0.01) {
                     this._stepping = 1;
                     if (dLeft > dRight) {
-                        this.step(this.leftLeg, targetLeft, pickLeft.getNormal(true, true)).then(() => { this._stepping = 0; });
+                        this.step(this.leftLeg, targetLeft, pickLeft.getNormal(true, true), this.forward).then(() => { this._stepping = 0; });
                     }
                     else {
-                        this.step(this.rightLeg, targetRight, pickRight.getNormal(true, true)).then(() => { this._stepping = 0; });
+                        this.step(this.rightLeg, targetRight, pickRight.getNormal(true, true), this.forward).then(() => { this._stepping = 0; });
                     }
                 }
             }

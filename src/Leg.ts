@@ -18,7 +18,7 @@ namespace Sumuqan {
 
         public footPos: BABYLON.Vector3 = BABYLON.Vector3.Zero();
         public footUp: BABYLON.Vector3 = new BABYLON.Vector3(0, 1, 0);
-        //public footForward: BABYLON.Vector3 = new BABYLON.Vector3(0, 1, 0);
+        public footForward: BABYLON.Vector3 = new BABYLON.Vector3(0, 0, 1);
 
         public hipPos: BABYLON.Vector3 = BABYLON.Vector3.Zero();
         public right: BABYLON.Vector3 = new BABYLON.Vector3(1, 0, 0);
@@ -66,7 +66,7 @@ namespace Sumuqan {
             this._lowerLegZ.scaleInPlace(this.lowerLegLength);
             this.foot.position.copyFrom(this.lowerLeg.position).addInPlace(this._lowerLegZ);
 
-            Mummu.QuaternionFromZYAxisToRef(this.forward, this.footUp, this.foot.rotationQuaternion);
+            Mummu.QuaternionFromYZAxisToRef(this.footUp, this.footForward, this.foot.rotationQuaternion);
         }
     }
 }
