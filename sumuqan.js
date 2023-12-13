@@ -10,7 +10,9 @@ var Sumuqan;
             this.footLength = 0.5;
             this.lowerLegLength = 1;
             this.upperLegLength = 1;
+            this.footThickness = 0.3;
             this.footPos = BABYLON.Vector3.Zero();
+            this.footUp = new BABYLON.Vector3(0, 1, 0);
             this.hipPos = BABYLON.Vector3.Zero();
             this.right = new BABYLON.Vector3(1, 0, 0);
             this.up = new BABYLON.Vector3(0, 1, 0);
@@ -46,7 +48,7 @@ var Sumuqan;
             Mummu.QuaternionFromZYAxisToRef(this._lowerLegZ, this.up, this.lowerLeg.rotationQuaternion);
             this._lowerLegZ.scaleInPlace(this.lowerLegLength);
             this.foot.position.copyFrom(this.lowerLeg.position).addInPlace(this._lowerLegZ);
-            Mummu.QuaternionFromZYAxisToRef(this.forward, this.up, this.foot.rotationQuaternion);
+            Mummu.QuaternionFromZYAxisToRef(this.forward, this.footUp, this.foot.rotationQuaternion);
         }
     }
     Sumuqan.Leg = Leg;
@@ -69,15 +71,29 @@ var Sumuqan;
                 this.rightLeg.up = this.up;
                 this.rightLeg.forward = this.forward;
                 if (this._stepping === 0) {
-                    let dRight = BABYLON.Vector3.DistanceSquared(this.rightLeg.footPos, this.rightFootTarget.absolutePosition);
-                    let dLeft = BABYLON.Vector3.DistanceSquared(this.leftLeg.footPos, this.leftFootTarget.absolutePosition);
+                    let dRight = 0;
+                    let dLeft = 0;
+                    let rayRight = new BABYLON.Ray(this.rightFootTarget.absolutePosition.add(this.up), this.up.scale(-2));
+                    let pickRight = this.getScene().pickWithRay(rayRight, this.terrainFilter);
+                    let targetRight;
+                    if (pickRight.hit && pickRight.pickedPoint) {
+                        targetRight = pickRight.pickedPoint.add(pickRight.getNormal(true, true).scale(this.rightLeg.footThickness));
+                        dRight = BABYLON.Vector3.DistanceSquared(this.rightLeg.footPos, targetRight);
+                    }
+                    let rayLeft = new BABYLON.Ray(this.leftFootTarget.absolutePosition.add(this.up), this.up.scale(-2));
+                    let pickLeft = this.getScene().pickWithRay(rayLeft, this.terrainFilter);
+                    let targetLeft;
+                    if (pickLeft.hit && pickLeft.pickedPoint) {
+                        targetLeft = pickLeft.pickedPoint.add(pickLeft.getNormal(true, true).scale(this.leftLeg.footThickness));
+                        dLeft = BABYLON.Vector3.DistanceSquared(this.leftLeg.footPos, targetLeft);
+                    }
                     if (Math.max(dRight, dLeft) > 0.01) {
                         this._stepping = 1;
                         if (dLeft > dRight) {
-                            this.step(this.leftLeg, this.leftFootTarget.absolutePosition).then(() => { this._stepping = 0; });
+                            this.step(this.leftLeg, targetLeft, pickLeft.getNormal(true, true)).then(() => { this._stepping = 0; });
                         }
                         else {
-                            this.step(this.rightLeg, this.rightFootTarget.absolutePosition).then(() => { this._stepping = 0; });
+                            this.step(this.rightLeg, targetRight, pickRight.getNormal(true, true)).then(() => { this._stepping = 0; });
                         }
                     }
                 }
@@ -102,15 +118,15 @@ var Sumuqan;
             this.rightLeg.instantiate();
             this.getScene().onBeforeRenderObservable.add(this._update);
         }
-        async step(leg, target /*, targetNorm: BABYLON.Vector3*/) {
+        async step(leg, target, targetNorm) {
             return new Promise(resolve => {
                 let origin = leg.footPos.clone();
-                //let originNorm = leg.targetNormal.clone();
+                let originNorm = leg.footUp.clone();
                 let destination = target.clone();
-                //let destinationNorm = targetNorm.clone();
+                let destinationNorm = targetNorm.clone();
                 let dist = BABYLON.Vector3.Distance(origin, destination);
                 let hMax = Math.min(Math.max(0.5, dist), 0.1);
-                let duration = Math.min(0.45, dist);
+                let duration = Math.min(0.8, 2 * dist);
                 let t = 0;
                 let animationCB = () => {
                     t += this.getScene().getEngine().getDeltaTime() / 1000;
@@ -118,15 +134,15 @@ var Sumuqan;
                     let h = Math.sqrt(Math.sin(f * Math.PI)) * hMax;
                     if (f < 1) {
                         let p = origin.scale(1 - f).addInPlace(destination.scale(f));
-                        //let n = originNorm.scale(1 - f).addInPlace(destinationNorm.scale(f)).normalize();
-                        let n = this.up;
+                        let n = originNorm.scale(1 - f).addInPlace(destinationNorm.scale(f)).normalize();
+                        //let n = this.up;
                         p.addInPlace(n.scale(h * dist * Math.sin(f * Math.PI)));
                         leg.footPos.copyFrom(p);
-                        //leg.targetNormal.copyFrom(n);
+                        leg.footUp.copyFrom(n);
                     }
                     else {
                         leg.footPos.copyFrom(destination);
-                        //leg.targetNormal.copyFrom(destinationNorm);
+                        leg.footUp.copyFrom(destinationNorm);
                         this.getScene().onBeforeRenderObservable.removeCallback(animationCB);
                         resolve();
                     }

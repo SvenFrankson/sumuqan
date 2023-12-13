@@ -8,10 +8,12 @@ declare namespace Sumuqan {
         footLength: number;
         lowerLegLength: number;
         upperLegLength: number;
+        footThickness: number;
         foot: BABYLON.Mesh;
         lowerLeg: BABYLON.Mesh;
         upperLeg: BABYLON.Mesh;
         footPos: BABYLON.Vector3;
+        footUp: BABYLON.Vector3;
         hipPos: BABYLON.Vector3;
         right: BABYLON.Vector3;
         up: BABYLON.Vector3;
@@ -34,6 +36,7 @@ declare namespace Sumuqan {
         leftLeg: Leg;
         rightLeg: Leg;
         private _stepping;
+        terrainFilter: (m: BABYLON.AbstractMesh) => boolean;
         constructor(name: string);
         initialize(): Promise<void>;
         private step;
