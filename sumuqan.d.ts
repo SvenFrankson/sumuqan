@@ -4,6 +4,7 @@
 /// <reference path="../kulla-grid/kulla-grid.d.ts" />
 declare namespace Sumuqan {
     class Leg {
+        isLeftLeg?: boolean;
         footLength: number;
         lowerLegLength: number;
         upperLegLength: number;
@@ -15,7 +16,7 @@ declare namespace Sumuqan {
         right: BABYLON.Vector3;
         up: BABYLON.Vector3;
         forward: BABYLON.Vector3;
-        constructor();
+        constructor(isLeftLeg?: boolean);
         instantiate(): Promise<void>;
         private _upperLegZ;
         private _lowerLegZ;
@@ -25,6 +26,8 @@ declare namespace Sumuqan {
 }
 declare namespace Sumuqan {
     class Walker extends BABYLON.Mesh {
+        leftHipAnchor: BABYLON.Vector3;
+        rightHipAnchor: BABYLON.Vector3;
         leftFootTarget: BABYLON.Mesh;
         rightFootTarget: BABYLON.Mesh;
         body: BABYLON.Mesh;

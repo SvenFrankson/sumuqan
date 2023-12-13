@@ -5,7 +5,8 @@
 var Sumuqan;
 (function (Sumuqan) {
     class Leg {
-        constructor() {
+        constructor(isLeftLeg) {
+            this.isLeftLeg = isLeftLeg;
             this.footLength = 0.5;
             this.lowerLegLength = 1;
             this.upperLegLength = 1;
@@ -30,7 +31,7 @@ var Sumuqan;
             this.upperLeg.rotationQuaternion = BABYLON.Quaternion.Identity();
         }
         updatePositions() {
-            this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).subtractInPlace(this.forward);
+            this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).subtractInPlace(this.forward).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
             for (let n = 0; n < 2; n++) {
                 Mummu.ForceDistanceFromOriginInPlace(this._kneePos, this.footPos, this.lowerLegLength);
                 Mummu.ForceDistanceFromOriginInPlace(this._kneePos, this.hipPos, this.upperLegLength);
@@ -55,10 +56,12 @@ var Sumuqan;
     class Walker extends BABYLON.Mesh {
         constructor(name) {
             super(name);
+            this.leftHipAnchor = new BABYLON.Vector3(-0.5, 0, 0);
+            this.rightHipAnchor = new BABYLON.Vector3(0.5, 0, 0);
             this._stepping = 0;
             this._update = () => {
-                BABYLON.Vector3.TransformCoordinatesToRef(new BABYLON.Vector3(-0.5, 0, 0), this.body.getWorldMatrix(), this.leftLeg.hipPos);
-                BABYLON.Vector3.TransformCoordinatesToRef(new BABYLON.Vector3(0.5, 0, 0), this.body.getWorldMatrix(), this.rightLeg.hipPos);
+                BABYLON.Vector3.TransformCoordinatesToRef(this.leftHipAnchor, this.body.getWorldMatrix(), this.leftLeg.hipPos);
+                BABYLON.Vector3.TransformCoordinatesToRef(this.rightHipAnchor, this.body.getWorldMatrix(), this.rightLeg.hipPos);
                 this.leftLeg.right = this.right;
                 this.leftLeg.up = this.up;
                 this.leftLeg.forward = this.forward;
@@ -81,11 +84,11 @@ var Sumuqan;
                 this.leftLeg.updatePositions();
                 this.rightLeg.updatePositions();
                 let bodyPos = this.leftLeg.footPos.add(this.rightLeg.footPos).scaleInPlace(0.5);
-                bodyPos.addInPlace(this.up.scale(1.3));
+                bodyPos.addInPlace(this.up.scale(1.8));
                 this.body.position.copyFrom(bodyPos);
             };
             this.body = BABYLON.MeshBuilder.CreateSphere("body", { diameterX: 1, diameterY: 1, diameterZ: 1.5 });
-            this.leftLeg = new Sumuqan.Leg();
+            this.leftLeg = new Sumuqan.Leg(true);
             this.rightLeg = new Sumuqan.Leg();
             this.rightFootTarget = new BABYLON.Mesh("right-foot-target");
             this.rightFootTarget.parent = this;

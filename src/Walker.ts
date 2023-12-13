@@ -2,6 +2,9 @@ namespace Sumuqan {
 
     export class Walker extends BABYLON.Mesh {
 
+        public leftHipAnchor: BABYLON.Vector3 = new BABYLON.Vector3(-0.5, 0, 0);
+        public rightHipAnchor: BABYLON.Vector3 = new BABYLON.Vector3(0.5, 0, 0);
+
         public leftFootTarget: BABYLON.Mesh;
         public rightFootTarget: BABYLON.Mesh;
 
@@ -15,7 +18,7 @@ namespace Sumuqan {
 
             this.body = BABYLON.MeshBuilder.CreateSphere("body", { diameterX: 1, diameterY: 1, diameterZ: 1.5 });
 
-            this.leftLeg = new Leg();
+            this.leftLeg = new Leg(true);
             this.rightLeg = new Leg();
 
             this.rightFootTarget = new BABYLON.Mesh("right-foot-target");
@@ -68,8 +71,8 @@ namespace Sumuqan {
         }
 
         private _update = () => {
-            BABYLON.Vector3.TransformCoordinatesToRef(new BABYLON.Vector3(-0.5, 0, 0), this.body.getWorldMatrix(), this.leftLeg.hipPos);
-            BABYLON.Vector3.TransformCoordinatesToRef(new BABYLON.Vector3(0.5, 0, 0), this.body.getWorldMatrix(), this.rightLeg.hipPos);
+            BABYLON.Vector3.TransformCoordinatesToRef(this.leftHipAnchor, this.body.getWorldMatrix(), this.leftLeg.hipPos);
+            BABYLON.Vector3.TransformCoordinatesToRef(this.rightHipAnchor, this.body.getWorldMatrix(), this.rightLeg.hipPos);
 
             this.leftLeg.right = this.right;
             this.leftLeg.up = this.up;
@@ -97,7 +100,7 @@ namespace Sumuqan {
             this.rightLeg.updatePositions();
 
             let bodyPos = this.leftLeg.footPos.add(this.rightLeg.footPos).scaleInPlace(0.5);
-            bodyPos.addInPlace(this.up.scale(1.3));
+            bodyPos.addInPlace(this.up.scale(1.8));
             this.body.position.copyFrom(bodyPos);
         }
     }

@@ -21,7 +21,7 @@ namespace Sumuqan {
         public up: BABYLON.Vector3 = new BABYLON.Vector3(0, 1, 0);
         public forward: BABYLON.Vector3 = new BABYLON.Vector3(0, 0, 1);
 
-        constructor() {
+        constructor(public isLeftLeg?: boolean) {
             this.foot = new BABYLON.Mesh("foot");
             this.lowerLeg = new BABYLON.Mesh("lower-leg");
             this.upperLeg = new BABYLON.Mesh("upper-leg");
@@ -40,7 +40,7 @@ namespace Sumuqan {
         private _lowerLegZ: BABYLON.Vector3 = BABYLON.Vector3.Forward();
         private _kneePos: BABYLON.Vector3 = BABYLON.Vector3.Zero();
         public updatePositions(): void {
-            this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).subtractInPlace(this.forward);
+            this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).subtractInPlace(this.forward).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
             
             for (let n = 0; n < 2; n++) {
                 Mummu.ForceDistanceFromOriginInPlace(this._kneePos, this.footPos, this.lowerLegLength);
