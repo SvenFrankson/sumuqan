@@ -27,16 +27,10 @@ namespace Sumuqan {
 
         constructor(public isLeftLeg?: boolean) {
             this.foot = new BABYLON.Mesh("foot");
-            this.lowerLeg = new BABYLON.Mesh("lower-leg");
-            this.upperLeg = new BABYLON.Mesh("upper-leg");
-        }
-
-        public async instantiate(): Promise<void> {
-            this.foot = BABYLON.MeshBuilder.CreateLines(this.foot.name, { points: [BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, 0, this.footLength)] });
             this.foot.rotationQuaternion = BABYLON.Quaternion.Identity();
-            this.lowerLeg = BABYLON.MeshBuilder.CreateLines(this.lowerLeg.name, { points: [BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, 0, this.lowerLegLength)] });
+            this.lowerLeg = new BABYLON.Mesh("lower-leg");
             this.lowerLeg.rotationQuaternion = BABYLON.Quaternion.Identity();
-            this.upperLeg = BABYLON.MeshBuilder.CreateLines(this.upperLeg.name, { points: [BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, 0, this.upperLegLength)] });
+            this.upperLeg = new BABYLON.Mesh("upper-leg");
             this.upperLeg.rotationQuaternion = BABYLON.Quaternion.Identity();
         }
 

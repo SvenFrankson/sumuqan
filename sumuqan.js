@@ -22,15 +22,10 @@ var Sumuqan;
             this._lowerLegZ = BABYLON.Vector3.Forward();
             this._kneePos = BABYLON.Vector3.Zero();
             this.foot = new BABYLON.Mesh("foot");
-            this.lowerLeg = new BABYLON.Mesh("lower-leg");
-            this.upperLeg = new BABYLON.Mesh("upper-leg");
-        }
-        async instantiate() {
-            this.foot = BABYLON.MeshBuilder.CreateLines(this.foot.name, { points: [BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, 0, this.footLength)] });
             this.foot.rotationQuaternion = BABYLON.Quaternion.Identity();
-            this.lowerLeg = BABYLON.MeshBuilder.CreateLines(this.lowerLeg.name, { points: [BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, 0, this.lowerLegLength)] });
+            this.lowerLeg = new BABYLON.Mesh("lower-leg");
             this.lowerLeg.rotationQuaternion = BABYLON.Quaternion.Identity();
-            this.upperLeg = BABYLON.MeshBuilder.CreateLines(this.upperLeg.name, { points: [BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, 0, this.upperLegLength)] });
+            this.upperLeg = new BABYLON.Mesh("upper-leg");
             this.upperLeg.rotationQuaternion = BABYLON.Quaternion.Identity();
         }
         updatePositions() {
@@ -126,9 +121,21 @@ var Sumuqan;
             this.leftFootTarget.parent = this;
             this.leftFootTarget.position.x = -0.6;
         }
+        setPosition(p) {
+            this.position.copyFrom(p);
+            this.computeWorldMatrix(true);
+            this.rightFootTarget.computeWorldMatrix(true);
+            this.leftFootTarget.computeWorldMatrix(true);
+            this.rightLeg.footPos.copyFrom(this.rightFootTarget.absolutePosition);
+            this.leftLeg.footPos.copyFrom(this.rightFootTarget.absolutePosition);
+            this.body.position.copyFrom(this.leftLeg.footPos).addInPlace(this.rightLeg.footPos).scaleInPlace(0.5);
+            this.body.position.addInPlace(this.up.scale(0.5));
+            this.body.computeWorldMatrix(true);
+            BABYLON.Vector3.TransformCoordinatesToRef(this.leftHipAnchor, this.body.getWorldMatrix(), this.leftLeg.hipPos);
+            BABYLON.Vector3.TransformCoordinatesToRef(this.rightHipAnchor, this.body.getWorldMatrix(), this.rightLeg.hipPos);
+            BABYLON.Vector3.TransformCoordinatesToRef(this.headAnchor, this.body.getWorldMatrix(), this.head.position);
+        }
         async initialize() {
-            this.leftLeg.instantiate();
-            this.rightLeg.instantiate();
             this.getScene().onBeforeRenderObservable.add(this._update);
         }
         async step(leg, target, targetNorm, targetForward) {

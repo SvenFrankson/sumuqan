@@ -20,7 +20,6 @@ declare namespace Sumuqan {
         up: BABYLON.Vector3;
         forward: BABYLON.Vector3;
         constructor(isLeftLeg?: boolean);
-        instantiate(): Promise<void>;
         private _upperLegZ;
         private _lowerLegZ;
         private _kneePos;
@@ -41,6 +40,7 @@ declare namespace Sumuqan {
         private _stepping;
         terrainFilter: (m: BABYLON.AbstractMesh) => boolean;
         constructor(name: string);
+        setPosition(p: BABYLON.Vector3): void;
         initialize(): Promise<void>;
         private step;
         private _update;

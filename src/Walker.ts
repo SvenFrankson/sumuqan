@@ -38,10 +38,27 @@ namespace Sumuqan {
             this.leftFootTarget.position.x = - 0.6;
         }
 
-        public async initialize(): Promise<void> {
-            this.leftLeg.instantiate();
-            this.rightLeg.instantiate();
+        public setPosition(p: BABYLON.Vector3): void {
+            this.position.copyFrom(p);
+            this.computeWorldMatrix(true);
+            
+            this.rightFootTarget.computeWorldMatrix(true);
+            this.leftFootTarget.computeWorldMatrix(true);
 
+            this.rightLeg.footPos.copyFrom(this.rightFootTarget.absolutePosition);
+            this.leftLeg.footPos.copyFrom(this.rightFootTarget.absolutePosition);
+
+            this.body.position.copyFrom(this.leftLeg.footPos).addInPlace(this.rightLeg.footPos).scaleInPlace(0.5);
+            this.body.position.addInPlace(this.up.scale(0.5));
+
+            this.body.computeWorldMatrix(true);
+
+            BABYLON.Vector3.TransformCoordinatesToRef(this.leftHipAnchor, this.body.getWorldMatrix(), this.leftLeg.hipPos);
+            BABYLON.Vector3.TransformCoordinatesToRef(this.rightHipAnchor, this.body.getWorldMatrix(), this.rightLeg.hipPos);
+            BABYLON.Vector3.TransformCoordinatesToRef(this.headAnchor, this.body.getWorldMatrix(), this.head.position);
+        }
+
+        public async initialize(): Promise<void> {
             this.getScene().onBeforeRenderObservable.add(this._update);
         }
 
