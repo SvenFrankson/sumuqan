@@ -56,8 +56,7 @@ var Sumuqan;
             this.leftHipAnchor = new BABYLON.Vector3(-0.5, 0, 0);
             this.rightHipAnchor = new BABYLON.Vector3(0.5, 0, 0);
             this.headAnchor = new BABYLON.Vector3(0, 0, 0.75);
-            this.bodyAnchor = 1.8;
-            this._footSpacing = 1.2;
+            this._footTarget = new BABYLON.Vector3(0.5, -0.5, 0);
             this._footThickness = 1.2;
             this._stepping = 0;
             this._update = () => {
@@ -101,7 +100,9 @@ var Sumuqan;
                 this.leftLeg.updatePositions();
                 this.rightLeg.updatePositions();
                 let bodyPos = this.leftLeg.footPos.add(this.rightLeg.footPos).scaleInPlace(0.5);
-                bodyPos.addInPlace(this.up.scale(this.bodyAnchor));
+                let offset = this.rightFootTarget.position.add(this.leftFootTarget.position).scale(0.5);
+                BABYLON.Vector3.TransformNormalToRef(offset, this.getWorldMatrix(), offset);
+                bodyPos.subtractInPlace(offset);
                 let bodyQuat = BABYLON.Quaternion.Identity();
                 Mummu.QuaternionFromYZAxisToRef(this.leftLeg.footUp.add(this.rightLeg.footUp), this.forward, bodyQuat);
                 let feetQuat = BABYLON.Quaternion.Identity();
@@ -119,18 +120,20 @@ var Sumuqan;
             this.rightLeg = new Sumuqan.Leg();
             this.rightFootTarget = new BABYLON.Mesh("right-foot-target");
             this.rightFootTarget.parent = this;
-            this.rightFootTarget.position.x = this._footSpacing * 0.5;
+            this.rightFootTarget.position.copyFrom(this.footTarget);
             this.leftFootTarget = new BABYLON.Mesh("left-foot-target");
             this.leftFootTarget.parent = this;
-            this.leftFootTarget.position.x = -this._footSpacing * 0.5;
+            this.leftFootTarget.position.copyFrom(this.footTarget);
+            this.leftFootTarget.position.x *= -1;
         }
-        get footSpacing() {
-            return this._footSpacing;
+        get footTarget() {
+            return this._footTarget;
         }
-        set footSpacing(v) {
-            this._footSpacing = v;
-            this.rightFootTarget.position.x = this._footSpacing * 0.5;
-            this.leftFootTarget.position.x = -this._footSpacing * 0.5;
+        set footTarget(v) {
+            this._footTarget = v;
+            this.rightFootTarget.position.copyFrom(this.footTarget);
+            this.leftFootTarget.position.copyFrom(this.footTarget);
+            this.leftFootTarget.position.x *= -1;
         }
         get footThickness() {
             return this._footThickness;

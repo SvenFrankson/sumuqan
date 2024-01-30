@@ -5,15 +5,15 @@ namespace Sumuqan {
         public leftHipAnchor: BABYLON.Vector3 = new BABYLON.Vector3(-0.5, 0, 0);
         public rightHipAnchor: BABYLON.Vector3 = new BABYLON.Vector3(0.5, 0, 0);
         public headAnchor: BABYLON.Vector3 = new BABYLON.Vector3(0, 0, 0.75);
-        public bodyAnchor: number = 1.8;
-        private _footSpacing: number = 1.2;
-        public get footSpacing(): number {
-            return this._footSpacing;
+        private _footTarget: BABYLON.Vector3 = new BABYLON.Vector3(0.5, - 0.5, 0);
+        public get footTarget(): BABYLON.Vector3 {
+            return this._footTarget;
         }
-        public set footSpacing(v: number) {
-            this._footSpacing = v;
-            this.rightFootTarget.position.x = this._footSpacing * 0.5;
-            this.leftFootTarget.position.x = - this._footSpacing * 0.5;
+        public set footTarget(v: BABYLON.Vector3) {
+            this._footTarget = v;
+            this.rightFootTarget.position.copyFrom(this.footTarget);
+            this.leftFootTarget.position.copyFrom(this.footTarget);
+            this.leftFootTarget.position.x *= -1;
         }
         private _footThickness: number = 1.2;
         public get footThickness(): number {
@@ -50,11 +50,12 @@ namespace Sumuqan {
 
             this.rightFootTarget = new BABYLON.Mesh("right-foot-target");
             this.rightFootTarget.parent = this;
-            this.rightFootTarget.position.x = this._footSpacing * 0.5;
+            this.rightFootTarget.position.copyFrom(this.footTarget);
 
             this.leftFootTarget = new BABYLON.Mesh("left-foot-target");
             this.leftFootTarget.parent = this;
-            this.leftFootTarget.position.x = - this._footSpacing * 0.5;
+            this.leftFootTarget.position.copyFrom(this.footTarget);
+            this.leftFootTarget.position.x *= -1;
         }
 
         public setPosition(p: BABYLON.Vector3): void {
@@ -169,7 +170,9 @@ namespace Sumuqan {
             this.rightLeg.updatePositions();
 
             let bodyPos = this.leftLeg.footPos.add(this.rightLeg.footPos).scaleInPlace(0.5);
-            bodyPos.addInPlace(this.up.scale(this.bodyAnchor));
+            let offset = this.rightFootTarget.position.add(this.leftFootTarget.position).scale(0.5);
+            BABYLON.Vector3.TransformNormalToRef(offset, this.getWorldMatrix(), offset);
+            bodyPos.subtractInPlace(offset);
 
             let bodyQuat = BABYLON.Quaternion.Identity();
             Mummu.QuaternionFromYZAxisToRef(this.leftLeg.footUp.add(this.rightLeg.footUp), this.forward, bodyQuat);

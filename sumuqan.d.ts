@@ -30,10 +30,9 @@ declare namespace Sumuqan {
         leftHipAnchor: BABYLON.Vector3;
         rightHipAnchor: BABYLON.Vector3;
         headAnchor: BABYLON.Vector3;
-        bodyAnchor: number;
-        private _footSpacing;
-        get footSpacing(): number;
-        set footSpacing(v: number);
+        private _footTarget;
+        get footTarget(): BABYLON.Vector3;
+        set footTarget(v: BABYLON.Vector3);
         private _footThickness;
         get footThickness(): number;
         set footThickness(v: number);
