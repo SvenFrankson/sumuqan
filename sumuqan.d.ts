@@ -1,7 +1,6 @@
 /// <reference path="lib/babylon.d.ts" />
 /// <reference path="../nabu/nabu.d.ts" />
 /// <reference path="../mummu/mummu.d.ts" />
-/// <reference path="../kulla-grid/kulla-grid.d.ts" />
 declare namespace Sumuqan {
     class Leg {
         isLeftLeg?: boolean;
@@ -31,6 +30,13 @@ declare namespace Sumuqan {
         leftHipAnchor: BABYLON.Vector3;
         rightHipAnchor: BABYLON.Vector3;
         headAnchor: BABYLON.Vector3;
+        bodyAnchor: number;
+        private _footSpacing;
+        get footSpacing(): number;
+        set footSpacing(v: number);
+        private _footThickness;
+        get footThickness(): number;
+        set footThickness(v: number);
         leftFootTarget: BABYLON.Mesh;
         rightFootTarget: BABYLON.Mesh;
         body: BABYLON.Mesh;

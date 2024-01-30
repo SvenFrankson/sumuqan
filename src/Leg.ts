@@ -1,7 +1,6 @@
 /// <reference path="../lib/babylon.d.ts"/>
 /// <reference path="../../nabu/nabu.d.ts"/>
 /// <reference path="../../mummu/mummu.d.ts"/>
-/// <reference path="../../kulla-grid/kulla-grid.d.ts"/>
 
 namespace Sumuqan {
 

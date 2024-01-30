@@ -5,6 +5,25 @@ namespace Sumuqan {
         public leftHipAnchor: BABYLON.Vector3 = new BABYLON.Vector3(-0.5, 0, 0);
         public rightHipAnchor: BABYLON.Vector3 = new BABYLON.Vector3(0.5, 0, 0);
         public headAnchor: BABYLON.Vector3 = new BABYLON.Vector3(0, 0, 0.75);
+        public bodyAnchor: number = 1.8;
+        private _footSpacing: number = 1.2;
+        public get footSpacing(): number {
+            return this._footSpacing;
+        }
+        public set footSpacing(v: number) {
+            this._footSpacing = v;
+            this.rightFootTarget.position.x = this._footSpacing * 0.5;
+            this.leftFootTarget.position.x = - this._footSpacing * 0.5;
+        }
+        private _footThickness: number = 1.2;
+        public get footThickness(): number {
+            return this._footThickness;
+        }
+        public set footThickness(v: number) {
+            this._footThickness = v;
+            this.rightLeg.footThickness = this._footThickness;
+            this.leftLeg.footThickness = this._footThickness;
+        }
 
         public leftFootTarget: BABYLON.Mesh;
         public rightFootTarget: BABYLON.Mesh;
@@ -31,11 +50,11 @@ namespace Sumuqan {
 
             this.rightFootTarget = new BABYLON.Mesh("right-foot-target");
             this.rightFootTarget.parent = this;
-            this.rightFootTarget.position.x = 0.6;
+            this.rightFootTarget.position.x = this._footSpacing * 0.5;
 
             this.leftFootTarget = new BABYLON.Mesh("left-foot-target");
             this.leftFootTarget.parent = this;
-            this.leftFootTarget.position.x = - 0.6;
+            this.leftFootTarget.position.x = - this._footSpacing * 0.5;
         }
 
         public setPosition(p: BABYLON.Vector3): void {
@@ -63,6 +82,7 @@ namespace Sumuqan {
         }
 
         private async step(leg: Leg, target: BABYLON.Vector3, targetNorm: BABYLON.Vector3, targetForward: BABYLON.Vector3): Promise<void> {
+            console.log("step " + target.clone());
             return new Promise<void>(resolve => {
                 let origin = leg.footPos.clone();
                 let originNorm = leg.footUp.clone();
@@ -118,6 +138,7 @@ namespace Sumuqan {
                 let dLeft = 0;
 
                 let rayRight = new BABYLON.Ray(this.rightFootTarget.absolutePosition.add(this.up), this.up.scale(- 2));
+                console.log(this.rightFootTarget.absolutePosition);
                 let pickRight = this.getScene().pickWithRay(rayRight, this.terrainFilter);
                 let targetRight: BABYLON.Vector3;
                 if (pickRight.hit && pickRight.pickedPoint) {
@@ -148,7 +169,7 @@ namespace Sumuqan {
             this.rightLeg.updatePositions();
 
             let bodyPos = this.leftLeg.footPos.add(this.rightLeg.footPos).scaleInPlace(0.5);
-            bodyPos.addInPlace(this.up.scale(1.8));
+            bodyPos.addInPlace(this.up.scale(this.bodyAnchor));
 
             let bodyQuat = BABYLON.Quaternion.Identity();
             Mummu.QuaternionFromYZAxisToRef(this.leftLeg.footUp.add(this.rightLeg.footUp), this.forward, bodyQuat);

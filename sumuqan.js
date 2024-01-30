@@ -1,7 +1,6 @@
 /// <reference path="../lib/babylon.d.ts"/>
 /// <reference path="../../nabu/nabu.d.ts"/>
 /// <reference path="../../mummu/mummu.d.ts"/>
-/// <reference path="../../kulla-grid/kulla-grid.d.ts"/>
 var Sumuqan;
 (function (Sumuqan) {
     class Leg {
@@ -57,6 +56,9 @@ var Sumuqan;
             this.leftHipAnchor = new BABYLON.Vector3(-0.5, 0, 0);
             this.rightHipAnchor = new BABYLON.Vector3(0.5, 0, 0);
             this.headAnchor = new BABYLON.Vector3(0, 0, 0.75);
+            this.bodyAnchor = 1.8;
+            this._footSpacing = 1.2;
+            this._footThickness = 1.2;
             this._stepping = 0;
             this._update = () => {
                 BABYLON.Vector3.TransformCoordinatesToRef(this.leftHipAnchor, this.body.getWorldMatrix(), this.leftLeg.hipPos);
@@ -72,6 +74,7 @@ var Sumuqan;
                     let dRight = 0;
                     let dLeft = 0;
                     let rayRight = new BABYLON.Ray(this.rightFootTarget.absolutePosition.add(this.up), this.up.scale(-2));
+                    console.log(this.rightFootTarget.absolutePosition);
                     let pickRight = this.getScene().pickWithRay(rayRight, this.terrainFilter);
                     let targetRight;
                     if (pickRight.hit && pickRight.pickedPoint) {
@@ -98,7 +101,7 @@ var Sumuqan;
                 this.leftLeg.updatePositions();
                 this.rightLeg.updatePositions();
                 let bodyPos = this.leftLeg.footPos.add(this.rightLeg.footPos).scaleInPlace(0.5);
-                bodyPos.addInPlace(this.up.scale(1.8));
+                bodyPos.addInPlace(this.up.scale(this.bodyAnchor));
                 let bodyQuat = BABYLON.Quaternion.Identity();
                 Mummu.QuaternionFromYZAxisToRef(this.leftLeg.footUp.add(this.rightLeg.footUp), this.forward, bodyQuat);
                 let feetQuat = BABYLON.Quaternion.Identity();
@@ -116,10 +119,26 @@ var Sumuqan;
             this.rightLeg = new Sumuqan.Leg();
             this.rightFootTarget = new BABYLON.Mesh("right-foot-target");
             this.rightFootTarget.parent = this;
-            this.rightFootTarget.position.x = 0.6;
+            this.rightFootTarget.position.x = this._footSpacing * 0.5;
             this.leftFootTarget = new BABYLON.Mesh("left-foot-target");
             this.leftFootTarget.parent = this;
-            this.leftFootTarget.position.x = -0.6;
+            this.leftFootTarget.position.x = -this._footSpacing * 0.5;
+        }
+        get footSpacing() {
+            return this._footSpacing;
+        }
+        set footSpacing(v) {
+            this._footSpacing = v;
+            this.rightFootTarget.position.x = this._footSpacing * 0.5;
+            this.leftFootTarget.position.x = -this._footSpacing * 0.5;
+        }
+        get footThickness() {
+            return this._footThickness;
+        }
+        set footThickness(v) {
+            this._footThickness = v;
+            this.rightLeg.footThickness = this._footThickness;
+            this.leftLeg.footThickness = this._footThickness;
         }
         setPosition(p) {
             this.position.copyFrom(p);
@@ -139,6 +158,7 @@ var Sumuqan;
             this.getScene().onBeforeRenderObservable.add(this._update);
         }
         async step(leg, target, targetNorm, targetForward) {
+            console.log("step " + target.clone());
             return new Promise(resolve => {
                 let origin = leg.footPos.clone();
                 let originNorm = leg.footUp.clone();
