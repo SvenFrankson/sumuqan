@@ -114,9 +114,9 @@ namespace Sumuqan {
                 let destination = target.clone();
                 let destinationNorm = targetNorm.clone();
                 let destinationForward = targetForward.clone();
-                let dist = BABYLON.Vector3.Distance(origin, destination);
+                let dist = 1.5 * BABYLON.Vector3.Distance(origin, destination);
                 let hMax = Math.min(Math.max(0.5, dist), 0.2)
-                let duration = Math.min(0.3, dist) * (0.9 + 0.2 * Math.random());
+                let duration = Math.min(0.5, dist) * (0.9 + 0.2 * Math.random());
                 let t = 0;
                 let animationCB = () => {
                     t += this.getScene().getEngine().getDeltaTime() / 1000;
@@ -211,24 +211,24 @@ namespace Sumuqan {
             let bodyPos = BABYLON.Vector3.Zero();
             let offset = BABYLON.Vector3.Zero();
             for (let i = 0; i < this.legPairCount; i++) {
-                bodyPos.addInPlace(this.rightLegs[i].footPos);
-                bodyPos.addInPlace(this.leftLegs[i].footPos);
+                bodyPos.addInPlace(this.rightLegs[i].foot.absolutePosition);
+                bodyPos.addInPlace(this.leftLegs[i].foot.absolutePosition);
 
                 offset.addInPlace(this.rightFootTargets[i].position);
                 offset.addInPlace(this.leftFootTargets[i].position);
             }
             bodyPos.scaleInPlace(1 / this.legCount);
             offset.scaleInPlace(1 / this.legCount);
+            offset.copyFromFloats(0, -0.15, 0);
             bodyPos.y -= 0.1;
 
             BABYLON.Vector3.TransformNormalToRef(offset, this.getWorldMatrix(), offset);
             bodyPos.subtractInPlace(offset);
 
-            BABYLON.Quaternion.SlerpToRef(this.body.rotationQuaternion, this.rotationQuaternion, 0.05, this.body.rotationQuaternion);
+            BABYLON.Quaternion.SlerpToRef(this.body.rotationQuaternion, this.rotationQuaternion, 0.01, this.body.rotationQuaternion);
             
             Mummu.QuaternionFromZYAxisToRef(this.forward, this.up, this.head.rotationQuaternion);
 
-            BABYLON.Vector3.LerpToRef(bodyPos, this.position, 0.1, bodyPos);
             BABYLON.Vector3.LerpToRef(this.body.position, bodyPos, 0.1, this.body.position);
         }
     }
