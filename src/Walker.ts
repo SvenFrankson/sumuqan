@@ -83,7 +83,6 @@ namespace Sumuqan {
         }
 
         private async step(leg: Leg, target: BABYLON.Vector3, targetNorm: BABYLON.Vector3, targetForward: BABYLON.Vector3): Promise<void> {
-            console.log("step " + target.clone());
             return new Promise<void>(resolve => {
                 let origin = leg.footPos.clone();
                 let originNorm = leg.footUp.clone();
@@ -92,8 +91,9 @@ namespace Sumuqan {
                 let destinationNorm = targetNorm.clone();
                 let destinationForward = targetForward.clone();
                 let dist = BABYLON.Vector3.Distance(origin, destination);
-                let hMax = Math.min(Math.max(1, dist), 0.2)
-                let duration = Math.min(0.8, 2 * dist);
+                let hMax = Math.min(Math.max(0.5, dist), 0.2)
+                //let duration = Math.min(0.5, 2 * dist);
+                let duration = 0.7;
                 let t = 0;
                 let animationCB = () => {
                     t += this.getScene().getEngine().getDeltaTime() / 1000;
@@ -139,7 +139,6 @@ namespace Sumuqan {
                 let dLeft = 0;
 
                 let rayRight = new BABYLON.Ray(this.rightFootTarget.absolutePosition.add(this.up), this.up.scale(- 2));
-                console.log(this.rightFootTarget.absolutePosition);
                 let pickRight = this.getScene().pickWithRay(rayRight, this.terrainFilter);
                 let targetRight: BABYLON.Vector3;
                 if (pickRight.hit && pickRight.pickedPoint) {
@@ -186,7 +185,7 @@ namespace Sumuqan {
             
             Mummu.QuaternionFromZYAxisToRef(this.forward, this.up, this.head.rotationQuaternion);
 
-            this.body.position.scaleInPlace(0.9).addInPlace(bodyPos.scale(0.1));
+            BABYLON.Vector3.LerpToRef(bodyPos, this.position, 0.2, this.body.position);
         }
     }
 }

@@ -26,6 +26,35 @@ declare namespace Sumuqan {
     }
 }
 declare namespace Sumuqan {
+    class Polypode extends BABYLON.Mesh {
+        legPairCount: number;
+        get legCount(): number;
+        leftHipAnchors: BABYLON.Vector3[];
+        rightHipAnchors: BABYLON.Vector3[];
+        headAnchor: BABYLON.Vector3;
+        private _footTargets;
+        get footTargets(): BABYLON.Vector3[];
+        setFootTarget(v: BABYLON.Vector3, index: number): void;
+        private _footThickness;
+        get footThickness(): number;
+        set footThickness(v: number);
+        leftFootTargets: BABYLON.Mesh[];
+        rightFootTargets: BABYLON.Mesh[];
+        body: BABYLON.Mesh;
+        head: BABYLON.Mesh;
+        leftLegs: Leg[];
+        rightLegs: Leg[];
+        legs: Leg[];
+        private _stepping;
+        terrainFilter: (m: BABYLON.AbstractMesh) => boolean;
+        constructor(name: string, legPairCount: number);
+        setPosition(p: BABYLON.Vector3): void;
+        initialize(): Promise<void>;
+        private step;
+        private _update;
+    }
+}
+declare namespace Sumuqan {
     class Walker extends BABYLON.Mesh {
         leftHipAnchor: BABYLON.Vector3;
         rightHipAnchor: BABYLON.Vector3;
