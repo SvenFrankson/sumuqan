@@ -2,8 +2,13 @@
 /// <reference path="../nabu/nabu.d.ts" />
 /// <reference path="../mummu/mummu.d.ts" />
 declare namespace Sumuqan {
+    enum KneeMode {
+        Backward = 0,
+        Vertical = 1
+    }
     class Leg {
         isLeftLeg?: boolean;
+        kneeMode: KneeMode;
         footLength: number;
         lowerLegLength: number;
         upperLegLength: number;

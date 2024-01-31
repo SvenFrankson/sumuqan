@@ -4,7 +4,14 @@
 
 namespace Sumuqan {
 
+    export enum KneeMode {
+        Backward,
+        Vertical
+    }
+
     export class Leg {
+
+        public kneeMode: KneeMode = KneeMode.Backward;
 
         public footLength: number = 0.5;
         public lowerLegLength: number = 1;
@@ -37,7 +44,12 @@ namespace Sumuqan {
         private _lowerLegZ: BABYLON.Vector3 = BABYLON.Vector3.Forward();
         private _kneePos: BABYLON.Vector3 = BABYLON.Vector3.Zero();
         public updatePositions(): void {
-            this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).subtractInPlace(this.forward).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
+            if (this.kneeMode === KneeMode.Backward) {
+                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).subtractInPlace(this.forward).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
+            }
+            else if (this.kneeMode === KneeMode.Vertical) {
+                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace(this.up).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
+            }
             
             for (let n = 0; n < 2; n++) {
                 Mummu.ForceDistanceFromOriginInPlace(this._kneePos, this.footPos, this.lowerLegLength);
@@ -54,7 +66,12 @@ namespace Sumuqan {
             this._kneePos.copyFrom(this.hipPos).addInPlace(this._upperLegZ);
             
             this.lowerLeg.position.copyFrom(this._kneePos);
-            Mummu.QuaternionFromZYAxisToRef(this._lowerLegZ, this.up, this.lowerLeg.rotationQuaternion);
+            if (this.kneeMode === KneeMode.Backward) {
+                Mummu.QuaternionFromZYAxisToRef(this._lowerLegZ, this.up, this.lowerLeg.rotationQuaternion);
+            }
+            else if (this.kneeMode === KneeMode.Vertical) {
+                Mummu.QuaternionFromZYAxisToRef(this._lowerLegZ, this.up.add(this.right.scale(this.isLeftLeg ? -1 : 1)), this.lowerLeg.rotationQuaternion);
+            }
             
             this._lowerLegZ.scaleInPlace(this.lowerLegLength);
             this.foot.position.copyFrom(this.lowerLeg.position).addInPlace(this._lowerLegZ);

@@ -56,7 +56,9 @@ namespace Sumuqan {
 
             for (let i = 0; i < this.legPairCount; i++) {
                 this.rightLegs[i] = new Leg();
+                this.rightLegs[i].kneeMode = KneeMode.Vertical;
                 this.leftLegs[i] = new Leg(true);
+                this.leftLegs[i].kneeMode = KneeMode.Vertical;
             }
             this.legs = [...this.rightLegs, ...this.leftLegs];
 
@@ -113,9 +115,8 @@ namespace Sumuqan {
                 let destinationNorm = targetNorm.clone();
                 let destinationForward = targetForward.clone();
                 let dist = BABYLON.Vector3.Distance(origin, destination);
-                let hMax = Math.min(Math.max(0.5, dist), 0.1)
-                //let duration = Math.min(0.5, 2 * dist);
-                let duration = 0.3;
+                let hMax = Math.min(Math.max(0.5, dist), 0.2)
+                let duration = Math.min(0.3, dist) * (0.9 + 0.2 * Math.random());
                 let t = 0;
                 let animationCB = () => {
                     t += this.getScene().getEngine().getDeltaTime() / 1000;
@@ -160,7 +161,7 @@ namespace Sumuqan {
                 this.rightLegs[i].forward = this.forward;
             }
 
-            if (this._stepping === 0) {
+            if (this._stepping <= 0) {
                 let longestStepDist = 0;
                 let legToMove: Leg;
                 let targetPosition: BABYLON.Vector3;
@@ -197,8 +198,8 @@ namespace Sumuqan {
                 }
 
                 if (longestStepDist > 0.01) {
-                    this._stepping = 1;
-                    this.step(legToMove, targetPosition, targetNormal, this.forward).then(() => { this._stepping = 0; });
+                    this._stepping++;
+                    this.step(legToMove, targetPosition, targetNormal, this.forward).then(() => { this._stepping--; });
                 }
             }
 
@@ -207,8 +208,19 @@ namespace Sumuqan {
                 this.rightLegs[i].updatePositions();
             }
 
-            let bodyPos = this.legs.map(leg => { return leg.footPos }).reduce((p1, p2) => { return p1.add(p2)}).scaleInPlace(1 / this.legCount);
-            let offset = this.rightFootTargets[1].position.add(this.leftFootTargets[1].position).scale(0.5);
+            let bodyPos = BABYLON.Vector3.Zero();
+            let offset = BABYLON.Vector3.Zero();
+            for (let i = 0; i < this.legPairCount; i++) {
+                bodyPos.addInPlace(this.rightLegs[i].footPos);
+                bodyPos.addInPlace(this.leftLegs[i].footPos);
+
+                offset.addInPlace(this.rightFootTargets[i].position);
+                offset.addInPlace(this.leftFootTargets[i].position);
+            }
+            bodyPos.scaleInPlace(1 / this.legCount);
+            offset.scaleInPlace(1 / this.legCount);
+            bodyPos.y -= 0.1;
+
             BABYLON.Vector3.TransformNormalToRef(offset, this.getWorldMatrix(), offset);
             bodyPos.subtractInPlace(offset);
 
@@ -216,7 +228,8 @@ namespace Sumuqan {
             
             Mummu.QuaternionFromZYAxisToRef(this.forward, this.up, this.head.rotationQuaternion);
 
-            BABYLON.Vector3.LerpToRef(bodyPos, this.position, 0.2, this.body.position);
+            BABYLON.Vector3.LerpToRef(bodyPos, this.position, 0.1, bodyPos);
+            BABYLON.Vector3.LerpToRef(this.body.position, bodyPos, 0.1, this.body.position);
         }
     }
 }

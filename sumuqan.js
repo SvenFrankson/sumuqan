@@ -3,9 +3,15 @@
 /// <reference path="../../mummu/mummu.d.ts"/>
 var Sumuqan;
 (function (Sumuqan) {
+    let KneeMode;
+    (function (KneeMode) {
+        KneeMode[KneeMode["Backward"] = 0] = "Backward";
+        KneeMode[KneeMode["Vertical"] = 1] = "Vertical";
+    })(KneeMode = Sumuqan.KneeMode || (Sumuqan.KneeMode = {}));
     class Leg {
         constructor(isLeftLeg) {
             this.isLeftLeg = isLeftLeg;
+            this.kneeMode = KneeMode.Backward;
             this.footLength = 0.5;
             this.lowerLegLength = 1;
             this.upperLegLength = 1;
@@ -28,7 +34,12 @@ var Sumuqan;
             this.upperLeg.rotationQuaternion = BABYLON.Quaternion.Identity();
         }
         updatePositions() {
-            this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).subtractInPlace(this.forward).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
+            if (this.kneeMode === KneeMode.Backward) {
+                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).subtractInPlace(this.forward).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
+            }
+            else if (this.kneeMode === KneeMode.Vertical) {
+                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace(this.up).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
+            }
             for (let n = 0; n < 2; n++) {
                 Mummu.ForceDistanceFromOriginInPlace(this._kneePos, this.footPos, this.lowerLegLength);
                 Mummu.ForceDistanceFromOriginInPlace(this._kneePos, this.hipPos, this.upperLegLength);
@@ -40,7 +51,12 @@ var Sumuqan;
             this._upperLegZ.scaleInPlace(this.upperLegLength);
             this._kneePos.copyFrom(this.hipPos).addInPlace(this._upperLegZ);
             this.lowerLeg.position.copyFrom(this._kneePos);
-            Mummu.QuaternionFromZYAxisToRef(this._lowerLegZ, this.up, this.lowerLeg.rotationQuaternion);
+            if (this.kneeMode === KneeMode.Backward) {
+                Mummu.QuaternionFromZYAxisToRef(this._lowerLegZ, this.up, this.lowerLeg.rotationQuaternion);
+            }
+            else if (this.kneeMode === KneeMode.Vertical) {
+                Mummu.QuaternionFromZYAxisToRef(this._lowerLegZ, this.up.add(this.right.scale(this.isLeftLeg ? -1 : 1)), this.lowerLeg.rotationQuaternion);
+            }
             this._lowerLegZ.scaleInPlace(this.lowerLegLength);
             this.foot.position.copyFrom(this.lowerLeg.position).addInPlace(this._lowerLegZ);
             Mummu.QuaternionFromYZAxisToRef(this.footUp, this.footForward, this.foot.rotationQuaternion);
@@ -79,7 +95,7 @@ var Sumuqan;
                     this.rightLegs[i].up = this.up;
                     this.rightLegs[i].forward = this.forward;
                 }
-                if (this._stepping === 0) {
+                if (this._stepping <= 0) {
                     let longestStepDist = 0;
                     let legToMove;
                     let targetPosition;
@@ -113,21 +129,31 @@ var Sumuqan;
                         }
                     }
                     if (longestStepDist > 0.01) {
-                        this._stepping = 1;
-                        this.step(legToMove, targetPosition, targetNormal, this.forward).then(() => { this._stepping = 0; });
+                        this._stepping++;
+                        this.step(legToMove, targetPosition, targetNormal, this.forward).then(() => { this._stepping--; });
                     }
                 }
                 for (let i = 0; i < this.legPairCount; i++) {
                     this.leftLegs[i].updatePositions();
                     this.rightLegs[i].updatePositions();
                 }
-                let bodyPos = this.legs.map(leg => { return leg.footPos; }).reduce((p1, p2) => { return p1.add(p2); }).scaleInPlace(1 / this.legCount);
-                let offset = this.rightFootTargets[1].position.add(this.leftFootTargets[1].position).scale(0.5);
+                let bodyPos = BABYLON.Vector3.Zero();
+                let offset = BABYLON.Vector3.Zero();
+                for (let i = 0; i < this.legPairCount; i++) {
+                    bodyPos.addInPlace(this.rightLegs[i].footPos);
+                    bodyPos.addInPlace(this.leftLegs[i].footPos);
+                    offset.addInPlace(this.rightFootTargets[i].position);
+                    offset.addInPlace(this.leftFootTargets[i].position);
+                }
+                bodyPos.scaleInPlace(1 / this.legCount);
+                offset.scaleInPlace(1 / this.legCount);
+                bodyPos.y -= 0.1;
                 BABYLON.Vector3.TransformNormalToRef(offset, this.getWorldMatrix(), offset);
                 bodyPos.subtractInPlace(offset);
                 BABYLON.Quaternion.SlerpToRef(this.body.rotationQuaternion, this.rotationQuaternion, 0.05, this.body.rotationQuaternion);
                 Mummu.QuaternionFromZYAxisToRef(this.forward, this.up, this.head.rotationQuaternion);
-                BABYLON.Vector3.LerpToRef(bodyPos, this.position, 0.2, this.body.position);
+                BABYLON.Vector3.LerpToRef(bodyPos, this.position, 0.1, bodyPos);
+                BABYLON.Vector3.LerpToRef(this.body.position, bodyPos, 0.1, this.body.position);
             };
             this.legPairCount = legPairCount;
             this.body = BABYLON.MeshBuilder.CreateSphere("body", { diameterX: 1, diameterY: 1, diameterZ: 1.5 });
@@ -136,7 +162,9 @@ var Sumuqan;
             this.head.rotationQuaternion = BABYLON.Quaternion.Identity();
             for (let i = 0; i < this.legPairCount; i++) {
                 this.rightLegs[i] = new Sumuqan.Leg();
+                this.rightLegs[i].kneeMode = Sumuqan.KneeMode.Vertical;
                 this.leftLegs[i] = new Sumuqan.Leg(true);
+                this.leftLegs[i].kneeMode = Sumuqan.KneeMode.Vertical;
             }
             this.legs = [...this.rightLegs, ...this.leftLegs];
             for (let i = 0; i < this.legPairCount; i++) {
@@ -202,9 +230,8 @@ var Sumuqan;
                 let destinationNorm = targetNorm.clone();
                 let destinationForward = targetForward.clone();
                 let dist = BABYLON.Vector3.Distance(origin, destination);
-                let hMax = Math.min(Math.max(0.5, dist), 0.1);
-                //let duration = Math.min(0.5, 2 * dist);
-                let duration = 0.3;
+                let hMax = Math.min(Math.max(0.5, dist), 0.2);
+                let duration = Math.min(0.3, dist) * (0.9 + 0.2 * Math.random());
                 let t = 0;
                 let animationCB = () => {
                     t += this.getScene().getEngine().getDeltaTime() / 1000;
