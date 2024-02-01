@@ -110,10 +110,10 @@ var Sumuqan;
                 }
                 BABYLON.Vector3.TransformCoordinatesToRef(this.headAnchor, this.body.getWorldMatrix(), this.head.position);
                 for (let i = 0; i < this.legPairCount; i++) {
-                    this.leftLegs[i].right = this.right.clone();
+                    this.leftLegs[i].right = this.right;
                     this.leftLegs[i].up = this.up;
                     this.leftLegs[i].forward = this.forward;
-                    this.rightLegs[i].right = this.right.clone();
+                    this.rightLegs[i].right = this.right;
                     this.rightLegs[i].up = this.up;
                     this.rightLegs[i].forward = this.forward;
                 }
@@ -136,7 +136,7 @@ var Sumuqan;
                         let targetRight;
                         if (pickRight.hit && pickRight.pickedPoint) {
                             targetRight = pickRight.pickedPoint.add(pickRight.getNormal(true, true).scale(this.rightLegs[i].footThickness));
-                            let d = BABYLON.Vector3.DistanceSquared(this.rightLegs[i].footPos, targetRight);
+                            let d = BABYLON.Vector3.DistanceSquared(this.rightLegs[i].foot.position, targetRight);
                             if (d > longestStepDist) {
                                 longestStepDist = d;
                                 legToMove = this.rightLegs[i];
@@ -155,7 +155,7 @@ var Sumuqan;
                         let targetLeft;
                         if (pickLeft.hit && pickLeft.pickedPoint) {
                             targetLeft = pickLeft.pickedPoint.add(pickLeft.getNormal(true, true).scale(this.leftLegs[i].footThickness));
-                            let d = BABYLON.Vector3.DistanceSquared(this.leftLegs[i].footPos, targetLeft);
+                            let d = BABYLON.Vector3.DistanceSquared(this.leftLegs[i].foot.position, targetLeft);
                             if (d > longestStepDist) {
                                 longestStepDist = d;
                                 legToMove = this.leftLegs[i];

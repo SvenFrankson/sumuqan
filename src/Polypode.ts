@@ -335,7 +335,7 @@ namespace Sumuqan {
                     let targetRight: BABYLON.Vector3;
                     if (pickRight.hit && pickRight.pickedPoint) {
                         targetRight = pickRight.pickedPoint.add(pickRight.getNormal(true, true).scale(this.rightLegs[i].footThickness));
-                        let d = BABYLON.Vector3.DistanceSquared(this.rightLegs[i].footPos, targetRight);
+                        let d = BABYLON.Vector3.DistanceSquared(this.rightLegs[i].foot.position, targetRight);
                         if (d > longestStepDist) {
                             longestStepDist = d;
                             legToMove = this.rightLegs[i];
@@ -356,7 +356,7 @@ namespace Sumuqan {
                     let targetLeft: BABYLON.Vector3;
                     if (pickLeft.hit && pickLeft.pickedPoint) {
                         targetLeft = pickLeft.pickedPoint.add(pickLeft.getNormal(true, true).scale(this.leftLegs[i].footThickness));
-                        let d = BABYLON.Vector3.DistanceSquared(this.leftLegs[i].footPos, targetLeft);
+                        let d = BABYLON.Vector3.DistanceSquared(this.leftLegs[i].foot.position, targetLeft);
                         if (d > longestStepDist) {
                             longestStepDist = d;
                             legToMove = this.leftLegs[i];
