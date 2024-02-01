@@ -31,20 +31,46 @@ declare namespace Sumuqan {
     }
 }
 declare namespace Sumuqan {
+    interface IPolypodeProps {
+        legPairsCount: number;
+        headAnchor?: BABYLON.Vector3;
+        hipAnchors?: BABYLON.Vector3[];
+        rightHipAnchors?: BABYLON.Vector3[];
+        leftHipAnchors?: BABYLON.Vector3[];
+        footTargets?: BABYLON.Vector3[];
+        rightFootTargets?: BABYLON.Vector3[];
+        leftFootTargets?: BABYLON.Vector3[];
+        footThickness?: number;
+        kneeMode?: KneeMode;
+        upperLegLength?: number;
+        lowerLegLength?: number;
+        stepDuration?: number;
+        stepDurationMin?: number;
+        stepDurationMax?: number;
+        stepHeight?: number;
+        stepHeightMin?: number;
+        stepHeightMax?: number;
+        bodyLocalOffset?: BABYLON.Vector3;
+        bodyWorldOffset?: BABYLON.Vector3;
+    }
     class Polypode extends BABYLON.Mesh {
         legPairCount: number;
         get legCount(): number;
-        leftHipAnchors: BABYLON.Vector3[];
-        rightHipAnchors: BABYLON.Vector3[];
         headAnchor: BABYLON.Vector3;
-        private _footTargets;
-        get footTargets(): BABYLON.Vector3[];
+        rightHipAnchors: BABYLON.Vector3[];
+        leftHipAnchors: BABYLON.Vector3[];
+        rightFootTargets: BABYLON.Vector3[];
+        leftFootTargets: BABYLON.Vector3[];
         setFootTarget(v: BABYLON.Vector3, index: number): void;
         private _footThickness;
         get footThickness(): number;
-        set footThickness(v: number);
-        leftFootTargets: BABYLON.Mesh[];
-        rightFootTargets: BABYLON.Mesh[];
+        setFootThickness(v: number): void;
+        stepDurationMin: number;
+        stepDurationMax: number;
+        stepHeightMin: number;
+        stepHeightMax: number;
+        bodyLocalOffset: BABYLON.Vector3;
+        bodyWorldOffset: BABYLON.Vector3;
         body: BABYLON.Mesh;
         head: BABYLON.Mesh;
         leftLegs: Leg[];
@@ -52,7 +78,7 @@ declare namespace Sumuqan {
         legs: Leg[];
         private _stepping;
         terrainFilter: (m: BABYLON.AbstractMesh) => boolean;
-        constructor(name: string, legPairCount: number);
+        constructor(name: string, prop: IPolypodeProps);
         setPosition(p: BABYLON.Vector3): void;
         initialize(): Promise<void>;
         private step;

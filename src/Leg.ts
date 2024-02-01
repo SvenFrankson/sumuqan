@@ -48,7 +48,7 @@ namespace Sumuqan {
                 this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).subtractInPlace(this.forward).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
             }
             else if (this.kneeMode === KneeMode.Vertical) {
-                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace(this.up).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
+                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace(this.up);
             }
             
             for (let n = 0; n < 2; n++) {

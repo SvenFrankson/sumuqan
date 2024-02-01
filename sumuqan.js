@@ -38,7 +38,7 @@ var Sumuqan;
                 this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).subtractInPlace(this.forward).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
             }
             else if (this.kneeMode === KneeMode.Vertical) {
-                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace(this.up).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
+                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace(this.up);
             }
             for (let n = 0; n < 2; n++) {
                 Mummu.ForceDistanceFromOriginInPlace(this._kneePos, this.footPos, this.lowerLegLength);
@@ -67,16 +67,17 @@ var Sumuqan;
 var Sumuqan;
 (function (Sumuqan) {
     class Polypode extends BABYLON.Mesh {
-        constructor(name, legPairCount) {
+        constructor(name, prop) {
             super(name);
             this.legPairCount = 2;
-            this.leftHipAnchors = [];
-            this.rightHipAnchors = [];
-            this.headAnchor = new BABYLON.Vector3(0, 0, 0.75);
-            this._footTargets = [];
+            this.headAnchor = new BABYLON.Vector3(0, Math.SQRT2, Math.SQRT2);
             this._footThickness = 1.2;
-            this.leftFootTargets = [];
-            this.rightFootTargets = [];
+            this.stepDurationMin = 0.3;
+            this.stepDurationMax = 0.7;
+            this.stepHeightMin = 0.3;
+            this.stepHeightMax = 0.7;
+            this.bodyLocalOffset = BABYLON.Vector3.Zero();
+            this.bodyWorldOffset = BABYLON.Vector3.Zero();
             this.leftLegs = [];
             this.rightLegs = [];
             this.legs = [];
@@ -95,13 +96,16 @@ var Sumuqan;
                     this.rightLegs[i].up = this.up;
                     this.rightLegs[i].forward = this.forward;
                 }
+                let m = this.computeWorldMatrix(true);
                 if (this._stepping <= 0) {
+                    let legTarget = BABYLON.Vector3.Zero();
                     let longestStepDist = 0;
                     let legToMove;
                     let targetPosition;
                     let targetNormal;
                     for (let i = 0; i < this.legPairCount; i++) {
-                        let rayRight = new BABYLON.Ray(this.rightFootTargets[i].absolutePosition.add(this.up), this.up.scale(-2));
+                        BABYLON.Vector3.TransformCoordinatesToRef(this.rightFootTargets[i], m, legTarget);
+                        let rayRight = new BABYLON.Ray(legTarget.add(this.up), this.up.scale(-2));
                         let pickRight = this.getScene().pickWithRay(rayRight, this.terrainFilter);
                         let targetRight;
                         if (pickRight.hit && pickRight.pickedPoint) {
@@ -114,7 +118,8 @@ var Sumuqan;
                                 targetNormal = pickRight.getNormal(true, true);
                             }
                         }
-                        let rayLeft = new BABYLON.Ray(this.leftFootTargets[i].absolutePosition.add(this.up), this.up.scale(-2));
+                        BABYLON.Vector3.TransformCoordinatesToRef(this.leftFootTargets[i], m, legTarget);
+                        let rayLeft = new BABYLON.Ray(legTarget.add(this.up), this.up.scale(-2));
                         let pickLeft = this.getScene().pickWithRay(rayLeft, this.terrainFilter);
                         let targetLeft;
                         if (pickLeft.hit && pickLeft.pickedPoint) {
@@ -142,20 +147,21 @@ var Sumuqan;
                 for (let i = 0; i < this.legPairCount; i++) {
                     bodyPos.addInPlace(this.rightLegs[i].foot.absolutePosition);
                     bodyPos.addInPlace(this.leftLegs[i].foot.absolutePosition);
-                    offset.addInPlace(this.rightFootTargets[i].position);
-                    offset.addInPlace(this.leftFootTargets[i].position);
+                    offset.addInPlace(this.rightFootTargets[i].scale(-1));
+                    offset.addInPlace(this.leftFootTargets[i].scale(-1));
                 }
                 bodyPos.scaleInPlace(1 / this.legCount);
                 offset.scaleInPlace(1 / this.legCount);
-                offset.copyFromFloats(0, -0.15, 0);
-                bodyPos.y -= 0.1;
+                offset.addInPlace(this.bodyLocalOffset);
                 BABYLON.Vector3.TransformNormalToRef(offset, this.getWorldMatrix(), offset);
-                bodyPos.subtractInPlace(offset);
+                offset.addInPlace(this.bodyWorldOffset);
+                bodyPos.addInPlace(offset);
                 BABYLON.Quaternion.SlerpToRef(this.body.rotationQuaternion, this.rotationQuaternion, 0.01, this.body.rotationQuaternion);
                 Mummu.QuaternionFromZYAxisToRef(this.forward, this.up, this.head.rotationQuaternion);
                 BABYLON.Vector3.LerpToRef(this.body.position, bodyPos, 0.1, this.body.position);
             };
-            this.legPairCount = legPairCount;
+            this.legPairCount = prop.legPairsCount;
+            // Create all required meshes
             this.body = BABYLON.MeshBuilder.CreateSphere("body", { diameterX: 1, diameterY: 1, diameterZ: 1.5 });
             this.body.rotationQuaternion = BABYLON.Quaternion.Identity();
             this.head = BABYLON.MeshBuilder.CreateSphere("head", { diameterX: 0.5, diameterY: 0.5, diameterZ: 0.75 });
@@ -167,33 +173,132 @@ var Sumuqan;
                 this.leftLegs[i].kneeMode = Sumuqan.KneeMode.Vertical;
             }
             this.legs = [...this.rightLegs, ...this.leftLegs];
+            /*
             for (let i = 0; i < this.legPairCount; i++) {
-                this.footTargets[i] = new BABYLON.Vector3(1, 0, 0.3 * i);
                 this.rightFootTargets[i] = new BABYLON.Mesh("right-foot-target-" + i);
+                BABYLON.CreateCapsuleVertexData({ radius: 0.005, height: 0.2 }).applyToMesh(this.rightFootTargets[i]);
                 this.rightFootTargets[i].parent = this;
-                this.rightFootTargets[i].position.copyFrom(this.footTargets[i]);
+    
                 this.leftFootTargets[i] = new BABYLON.Mesh("left-foot-target-" + i);
+                BABYLON.CreateCapsuleVertexData({ radius: 0.005, height: 0.2 }).applyToMesh(this.leftFootTargets[i]);
                 this.leftFootTargets[i].parent = this;
-                this.leftFootTargets[i].position.copyFrom(this.footTargets[i]);
-                this.leftFootTargets[i].position.x *= -1;
+            }
+            */
+            // Apply properties
+            if (Mummu.IsFinite(prop.headAnchor)) {
+                this.headAnchor = prop.headAnchor;
+            }
+            if (prop.hipAnchors) {
+                // HipAnchors provided
+                this.rightHipAnchors = [...prop.hipAnchors].map(v => { return v.clone(); });
+                this.leftHipAnchors = [...prop.hipAnchors].map(v => { return v.multiplyByFloats(-1, 1, 1); });
+            }
+            else {
+                if (prop.rightHipAnchors && prop.leftHipAnchors) {
+                    // Right and Left HipAnchors provided
+                    this.rightHipAnchors = [...prop.rightHipAnchors].map(v => { return v.clone(); });
+                    this.leftHipAnchors = [...prop.leftHipAnchors].map(v => { return v.clone(); });
+                }
+                else {
+                    // Generate default HipAnchors
+                    this.rightHipAnchors = [];
+                    this.leftHipAnchors = [];
+                    for (let i = 0; i < this.legPairCount; i++) {
+                        let a = (i + 1) / (this.legPairCount + 1) * Math.PI;
+                        let cosa = Math.cos(a);
+                        let sina = Math.sin(a);
+                        this.rightHipAnchors[i] = (new BABYLON.Vector3(sina, 0, cosa)).normalize();
+                        this.leftHipAnchors[i] = (new BABYLON.Vector3(-sina, 0, cosa)).normalize();
+                    }
+                }
+            }
+            if (prop.footTargets) {
+                // FootTargets provided
+                this.rightFootTargets = [...prop.footTargets].map(v => { return v.clone(); });
+                this.leftFootTargets = [...prop.footTargets].map(v => { return v.multiplyByFloats(-1, 1, 1); });
+            }
+            else {
+                if (prop.rightFootTargets && prop.leftFootTargets) {
+                    // Right and Left FootTargets provided
+                    this.rightFootTargets = [...prop.rightFootTargets].map(v => { return v.clone(); });
+                    this.leftFootTargets = [...prop.leftFootTargets].map(v => { return v.clone(); });
+                }
+                else {
+                    // Generate default FootTargets
+                    this.rightFootTargets = [];
+                    this.leftFootTargets = [];
+                    for (let i = 0; i < this.legPairCount; i++) {
+                        let a = (i + 1) / (this.legPairCount + 1) * Math.PI;
+                        let cosa = Math.cos(a);
+                        let sina = Math.sin(a);
+                        this.rightFootTargets[i] = (new BABYLON.Vector3(sina, -0.5, cosa)).normalize().scaleInPlace(2);
+                        this.leftFootTargets[i] = (new BABYLON.Vector3(-sina, -0.5, cosa)).normalize().scaleInPlace(2);
+                    }
+                }
+            }
+            if (isFinite(prop.footThickness)) {
+                for (let i = 0; i < this.legPairCount; i++) {
+                    this.rightLegs[i].footThickness = prop.footThickness;
+                    this.leftLegs[i].footThickness = prop.footThickness;
+                }
+            }
+            if (isFinite(prop.kneeMode)) {
+                for (let i = 0; i < this.legPairCount; i++) {
+                    this.rightLegs[i].kneeMode = prop.kneeMode;
+                    this.leftLegs[i].kneeMode = prop.kneeMode;
+                }
+            }
+            if (isFinite(prop.upperLegLength)) {
+                for (let i = 0; i < this.legPairCount; i++) {
+                    this.rightLegs[i].upperLegLength = prop.upperLegLength;
+                    this.leftLegs[i].upperLegLength = prop.upperLegLength;
+                }
+            }
+            if (isFinite(prop.lowerLegLength)) {
+                for (let i = 0; i < this.legPairCount; i++) {
+                    this.rightLegs[i].lowerLegLength = prop.lowerLegLength;
+                    this.leftLegs[i].lowerLegLength = prop.lowerLegLength;
+                }
+            }
+            if (isFinite(prop.stepDuration)) {
+                this.stepDurationMin = prop.stepDuration;
+                this.stepDurationMax = prop.stepDuration;
+            }
+            if (isFinite(prop.stepDurationMin)) {
+                this.stepDurationMin = prop.stepDurationMin;
+            }
+            if (isFinite(prop.stepDurationMax)) {
+                this.stepDurationMax = prop.stepDurationMax;
+            }
+            if (isFinite(prop.stepHeight)) {
+                this.stepHeightMin = prop.stepHeight;
+                this.stepHeightMax = prop.stepHeight;
+            }
+            if (isFinite(prop.stepHeightMin)) {
+                this.stepHeightMin = prop.stepHeightMin;
+            }
+            if (isFinite(prop.stepHeightMax)) {
+                this.stepHeightMax = prop.stepHeightMax;
+            }
+            if (Mummu.IsFinite(prop.bodyLocalOffset)) {
+                this.bodyLocalOffset = prop.bodyLocalOffset;
+            }
+            if (Mummu.IsFinite(prop.bodyWorldOffset)) {
+                this.bodyWorldOffset = prop.bodyWorldOffset;
             }
         }
         get legCount() {
             return this.legPairCount * 2;
         }
-        get footTargets() {
-            return this._footTargets;
-        }
         setFootTarget(v, index) {
-            this._footTargets[index] = v;
-            this.rightFootTargets[index].position.copyFrom(this._footTargets[index]);
-            this.leftFootTargets[index].position.copyFrom(this._footTargets[index]);
-            this.leftFootTargets[index].position.x *= -1;
+            this.rightFootTargets[index].copyFrom(v);
+            this.leftFootTargets[index].copyFrom(v);
+            this.leftFootTargets[index].x *= -1;
         }
         get footThickness() {
             return this._footThickness;
         }
-        set footThickness(v) {
+        setFootThickness(v) {
             this._footThickness = v;
             for (let i = 0; i < this.legPairCount; i++) {
                 this.rightLegs[i].footThickness = this._footThickness;
@@ -202,12 +307,10 @@ var Sumuqan;
         }
         setPosition(p) {
             this.position.copyFrom(p);
-            this.computeWorldMatrix(true);
+            let m = this.computeWorldMatrix(true);
             for (let i = 0; i < this.legPairCount; i++) {
-                this.rightFootTargets[i].computeWorldMatrix(true);
-                this.leftFootTargets[i].computeWorldMatrix(true);
-                this.rightLegs[i].footPos.copyFrom(this.rightFootTargets[i].absolutePosition);
-                this.leftLegs[i].footPos.copyFrom(this.rightFootTargets[i].absolutePosition);
+                BABYLON.Vector3.TransformCoordinatesToRef(this.rightFootTargets[i], m, this.rightLegs[i].footPos);
+                BABYLON.Vector3.TransformCoordinatesToRef(this.leftFootTargets[i], m, this.leftLegs[i].footPos);
             }
             this.body.position.copyFrom(this.leftLegs[0].footPos).addInPlace(this.rightLegs[0].footPos).scaleInPlace(0.5);
             this.body.position.addInPlace(this.up.scale(0.5));
