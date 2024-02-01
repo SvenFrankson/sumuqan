@@ -116,7 +116,12 @@ var Sumuqan;
                     let targetNormal;
                     for (let i = 0; i < this.legPairCount; i++) {
                         BABYLON.Vector3.TransformCoordinatesToRef(this.rightFootTargets[i], m, legTarget);
-                        let rayRight = new BABYLON.Ray(legTarget.add(this.up), this.up.scale(-2));
+                        let rayRightDir = BABYLON.Vector3.TransformNormal(this.rightFootTargets[i].multiplyByFloats(1, 3, 1), m);
+                        let rayRightOrigin = legTarget.subtract(rayRightDir.scale(1));
+                        let lRight = rayRightDir.length();
+                        rayRightDir.scaleInPlace(1 / lRight);
+                        let rayRight = new BABYLON.Ray(rayRightOrigin, rayRightDir, 2 * lRight);
+                        //Mummu.DrawDebugLine(rayRightOrigin, rayRightOrigin.add(rayRightDir.scale(2 * lRight)), 3);
                         let pickRight = this.getScene().pickWithRay(rayRight, this.terrainFilter);
                         let targetRight;
                         if (pickRight.hit && pickRight.pickedPoint) {
@@ -130,7 +135,12 @@ var Sumuqan;
                             }
                         }
                         BABYLON.Vector3.TransformCoordinatesToRef(this.leftFootTargets[i], m, legTarget);
-                        let rayLeft = new BABYLON.Ray(legTarget.add(this.up), this.up.scale(-2));
+                        let rayLeftDir = BABYLON.Vector3.TransformNormal(this.leftFootTargets[i].multiplyByFloats(1, 3, 1), m);
+                        let rayLeftOrigin = legTarget.subtract(rayLeftDir.scale(1));
+                        let lLeft = rayLeftDir.length();
+                        rayLeftDir.scaleInPlace(1 / lLeft);
+                        let rayLeft = new BABYLON.Ray(rayLeftOrigin, rayLeftDir, 2 * lLeft);
+                        //Mummu.DrawDebugLine(rayLeftOrigin, rayLeftOrigin.add(rayLeftDir.scale(2 * lLeft)), 3);
                         let pickLeft = this.getScene().pickWithRay(rayLeft, this.terrainFilter);
                         let targetLeft;
                         if (pickLeft.hit && pickLeft.pickedPoint) {
