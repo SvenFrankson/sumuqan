@@ -4,11 +4,13 @@
 declare namespace Sumuqan {
     enum KneeMode {
         Backward = 0,
-        Vertical = 1
+        Vertical = 1,
+        Outward = 2
     }
     class Leg {
         isLeftLeg?: boolean;
         kneeMode: KneeMode;
+        initialKneePos: BABYLON.Vector3;
         footLength: number;
         lowerLegLength: number;
         upperLegLength: number;

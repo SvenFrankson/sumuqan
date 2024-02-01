@@ -7,11 +7,12 @@ var Sumuqan;
     (function (KneeMode) {
         KneeMode[KneeMode["Backward"] = 0] = "Backward";
         KneeMode[KneeMode["Vertical"] = 1] = "Vertical";
+        KneeMode[KneeMode["Outward"] = 2] = "Outward";
     })(KneeMode = Sumuqan.KneeMode || (Sumuqan.KneeMode = {}));
     class Leg {
         constructor(isLeftLeg) {
             this.isLeftLeg = isLeftLeg;
-            this.kneeMode = KneeMode.Backward;
+            this.kneeMode = KneeMode.Vertical;
             this.footLength = 0.5;
             this.lowerLegLength = 1;
             this.upperLegLength = 1;
@@ -44,11 +45,17 @@ var Sumuqan;
             this.foot.scaling.copyFromFloats(this.scale, this.scale, this.scale);
         }
         updatePositions() {
-            if (this.kneeMode === KneeMode.Backward) {
+            if (this.initialKneePos) {
+                this._kneePos.copyFrom(this.initialKneePos);
+            }
+            else if (this.kneeMode === KneeMode.Backward) {
                 this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).subtractInPlace(this.forward).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
             }
             else if (this.kneeMode === KneeMode.Vertical) {
-                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace(this.up);
+                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace((this.up.add(this.footUp)).normalize());
+            }
+            else if (this.kneeMode === KneeMode.Outward) {
+                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
             }
             for (let n = 0; n < 2; n++) {
                 Mummu.ForceDistanceFromOriginInPlace(this._kneePos, this.footPos, this.lowerLegLength * this.scale);
@@ -66,6 +73,9 @@ var Sumuqan;
             }
             else if (this.kneeMode === KneeMode.Vertical) {
                 Mummu.QuaternionFromZYAxisToRef(this._lowerLegZ, this.up.add(this.right.scale(this.isLeftLeg ? -1 : 1)), this.lowerLeg.rotationQuaternion);
+            }
+            else if (this.kneeMode === KneeMode.Outward) {
+                Mummu.QuaternionFromZYAxisToRef(this._lowerLegZ, this.right.scale(this.isLeftLeg ? -1 : 1), this.lowerLeg.rotationQuaternion);
             }
             this._lowerLegZ.scaleInPlace(this.lowerLegLength * this.scale);
             this.foot.position.copyFrom(this.lowerLeg.position).addInPlace(this._lowerLegZ);
@@ -100,10 +110,10 @@ var Sumuqan;
                 }
                 BABYLON.Vector3.TransformCoordinatesToRef(this.headAnchor, this.body.getWorldMatrix(), this.head.position);
                 for (let i = 0; i < this.legPairCount; i++) {
-                    this.leftLegs[i].right = this.right;
+                    this.leftLegs[i].right = this.right.clone();
                     this.leftLegs[i].up = this.up;
                     this.leftLegs[i].forward = this.forward;
-                    this.rightLegs[i].right = this.right;
+                    this.rightLegs[i].right = this.right.clone();
                     this.rightLegs[i].up = this.up;
                     this.rightLegs[i].forward = this.forward;
                 }
