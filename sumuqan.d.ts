@@ -23,6 +23,9 @@ declare namespace Sumuqan {
         right: BABYLON.Vector3;
         up: BABYLON.Vector3;
         forward: BABYLON.Vector3;
+        private _scale;
+        get scale(): number;
+        set scale(s: number);
         constructor(isLeftLeg?: boolean);
         private _upperLegZ;
         private _lowerLegZ;
@@ -44,6 +47,7 @@ declare namespace Sumuqan {
         kneeMode?: KneeMode;
         upperLegLength?: number;
         lowerLegLength?: number;
+        legScales?: number[];
         stepDuration?: number;
         stepDurationMin?: number;
         stepDurationMax?: number;

@@ -13,6 +13,7 @@ namespace Sumuqan {
         kneeMode?: KneeMode;
         upperLegLength?: number;
         lowerLegLength?: number;
+        legScales?: number[];
         stepDuration?: number;
         stepDurationMin?: number;
         stepDurationMax?: number;
@@ -184,6 +185,15 @@ namespace Sumuqan {
                 for (let i = 0; i < this.legPairCount; i++) {
                     this.rightLegs[i].lowerLegLength = prop.lowerLegLength;
                     this.leftLegs[i].lowerLegLength = prop.lowerLegLength;
+                }
+            }
+
+            if (prop.legScales) {
+                for (let i = 0; i < this.legPairCount; i++) {
+                    if (isFinite(prop.legScales[i])) {
+                        this.rightLegs[i].scale = prop.legScales[i];
+                        this.leftLegs[i].scale = prop.legScales[i];
+                    }
                 }
             }
 
