@@ -54,6 +54,7 @@ declare namespace Sumuqan {
         stepHeight?: number;
         stepHeightMin?: number;
         stepHeightMax?: number;
+        bootyShakiness?: number;
         bodyLocalOffset?: BABYLON.Vector3;
         bodyWorldOffset?: BABYLON.Vector3;
     }
@@ -73,6 +74,7 @@ declare namespace Sumuqan {
         stepDurationMax: number;
         stepHeightMin: number;
         stepHeightMax: number;
+        bootyShakiness: number;
         bodyLocalOffset: BABYLON.Vector3;
         bodyWorldOffset: BABYLON.Vector3;
         body: BABYLON.Mesh;

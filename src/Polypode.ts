@@ -20,6 +20,7 @@ namespace Sumuqan {
         stepHeight?: number;
         stepHeightMin?: number;
         stepHeightMax?: number;
+        bootyShakiness?: number;
         bodyLocalOffset?: BABYLON.Vector3;
         bodyWorldOffset?: BABYLON.Vector3;
     }
@@ -59,6 +60,7 @@ namespace Sumuqan {
         public stepDurationMax: number = 0.7;
         public stepHeightMin: number = 0.3;
         public stepHeightMax: number = 0.7;
+        public bootyShakiness: number = 0.5;
 
         public bodyLocalOffset: BABYLON.Vector3 = BABYLON.Vector3.Zero();
         public bodyWorldOffset: BABYLON.Vector3 = BABYLON.Vector3.Zero();
@@ -219,6 +221,10 @@ namespace Sumuqan {
                 this.stepHeightMax = prop.stepHeightMax;
             }
             
+            if (isFinite(prop.bootyShakiness)) {
+                this.bootyShakiness = prop.bootyShakiness;
+            }
+
             if (Mummu.IsFinite(prop.bodyLocalOffset)) {
                 this.bodyLocalOffset = prop.bodyLocalOffset;
             }
@@ -262,8 +268,8 @@ namespace Sumuqan {
                 let destinationNorm = targetNorm.clone();
                 let destinationForward = targetForward.clone();
                 let dist = 1.5 * BABYLON.Vector3.Distance(origin, destination);
-                let hMax = Math.min(Math.max(0.5, dist), 0.2)
-                let duration = Math.min(0.5, dist) * (0.9 + 0.2 * Math.random());
+                let hMax = Math.min(Math.max(this.stepHeightMin, dist), this.stepHeightMax);
+                let duration = Math.min(Math.max(this.stepDurationMin, dist), this.stepDurationMax);
                 let t = 0;
                 let animationCB = () => {
                     t += this.getScene().getEngine().getDeltaTime() / 1000;
@@ -361,22 +367,33 @@ namespace Sumuqan {
 
             let bodyPos = BABYLON.Vector3.Zero();
             let offset = BABYLON.Vector3.Zero();
+            let averageRightFoot = BABYLON.Vector3.Zero();
+            let averageLeftFoot = BABYLON.Vector3.Zero();
             for (let i = 0; i < this.legPairCount; i++) {
-                bodyPos.addInPlace(this.rightLegs[i].foot.absolutePosition);
-                bodyPos.addInPlace(this.leftLegs[i].foot.absolutePosition);
+                averageRightFoot.addInPlace(this.rightLegs[i].foot.absolutePosition);
+                averageLeftFoot.addInPlace(this.leftLegs[i].foot.absolutePosition);
 
                 offset.addInPlace(this.rightFootTargets[i].scale(-1));
                 offset.addInPlace(this.leftFootTargets[i].scale(-1));
             }
-            bodyPos.scaleInPlace(1 / this.legCount);
+            averageRightFoot.scaleInPlace(1 / this.legPairCount);
+            averageLeftFoot.scaleInPlace(1 / this.legPairCount);
+            bodyPos.copyFrom(averageRightFoot).addInPlace(averageLeftFoot).scaleInPlace(0.5);
             offset.scaleInPlace(1 / this.legCount);
             offset.addInPlace(this.bodyLocalOffset);
             BABYLON.Vector3.TransformNormalToRef(offset, this.getWorldMatrix(), offset);
             offset.addInPlace(this.bodyWorldOffset);
-
             bodyPos.addInPlace(offset);
 
-            BABYLON.Quaternion.SlerpToRef(this.body.rotationQuaternion, this.rotationQuaternion, 0.01, this.body.rotationQuaternion);
+            averageRightFoot.subtractInPlace(this.body.position);
+            averageLeftFoot.subtractInPlace(this.body.position);
+            let upFromRightLeg = BABYLON.Vector3.Cross(this.forward, averageRightFoot).normalize();
+            let upFromLeftLeg = BABYLON.Vector3.Cross(averageLeftFoot, this.forward).normalize();
+            let upFromLeg = upFromRightLeg.add(upFromLeftLeg).normalize();
+            let quatFromLeg = Mummu.QuaternionFromYZAxis(upFromLeg, this.forward);
+            let targetQuat = BABYLON.Quaternion.Slerp(this.rotationQuaternion, quatFromLeg, this.bootyShakiness);
+
+            BABYLON.Quaternion.SlerpToRef(this.body.rotationQuaternion, targetQuat, 0.2, this.body.rotationQuaternion);
             
             Mummu.QuaternionFromZYAxisToRef(this.forward, this.up, this.head.rotationQuaternion);
 
