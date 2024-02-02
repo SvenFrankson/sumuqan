@@ -15,6 +15,7 @@ declare namespace Sumuqan {
         lowerLegLength: number;
         upperLegLength: number;
         footThickness: number;
+        get totalLength(): number;
         foot: BABYLON.Mesh;
         lowerLeg: BABYLON.Mesh;
         upperLeg: BABYLON.Mesh;

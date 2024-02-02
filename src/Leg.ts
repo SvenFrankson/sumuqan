@@ -19,6 +19,9 @@ namespace Sumuqan {
         public lowerLegLength: number = 1;
         public upperLegLength: number = 1;
         public footThickness: number = 0.23;
+        public get totalLength(): number {
+            return (this.upperLegLength + this.lowerLegLength) * this.scale;
+        }
 
         public foot: BABYLON.Mesh;
         public lowerLeg: BABYLON.Mesh;
@@ -61,7 +64,7 @@ namespace Sumuqan {
                 this._kneePos.copyFrom(this.initialKneePos);
             }
             else if (this.kneeMode === KneeMode.Backward) {
-                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).subtractInPlace(this.forward).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
+                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace((this.up.add(this.footUp)).normalize()).subtractInPlace(this.forward).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
             }
             else if (this.kneeMode === KneeMode.Vertical) {
                 this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace((this.up.add(this.footUp)).normalize());
@@ -86,13 +89,13 @@ namespace Sumuqan {
             
             this.lowerLeg.position.copyFrom(this._kneePos);
             if (this.kneeMode === KneeMode.Backward) {
-                Mummu.QuaternionFromZYAxisToRef(this._lowerLegZ, this.up, this.lowerLeg.rotationQuaternion);
+                Mummu.QuaternionFromZYAxisToRef(this._lowerLegZ, this._upperLegZ, this.lowerLeg.rotationQuaternion);
             }
             else if (this.kneeMode === KneeMode.Vertical) {
-                Mummu.QuaternionFromZYAxisToRef(this._lowerLegZ, this.up.add(this.right.scale(this.isLeftLeg ? -1 : 1)), this.lowerLeg.rotationQuaternion);
+                Mummu.QuaternionFromZYAxisToRef(this._lowerLegZ, this._upperLegZ, this.lowerLeg.rotationQuaternion);
             }
             else if (this.kneeMode === KneeMode.Outward) {
-                Mummu.QuaternionFromZYAxisToRef(this._lowerLegZ, this.right.scale(this.isLeftLeg ? -1 : 1), this.lowerLeg.rotationQuaternion);
+                Mummu.QuaternionFromZYAxisToRef(this._lowerLegZ, this._upperLegZ, this.lowerLeg.rotationQuaternion);
             }
             
             this._lowerLegZ.scaleInPlace(this.lowerLegLength * this.scale);
