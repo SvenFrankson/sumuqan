@@ -62,6 +62,11 @@ declare namespace Sumuqan {
         bodyWorldOffset?: BABYLON.Vector3;
     }
     class Polypode extends BABYLON.Mesh {
+        mentalMap: BABYLON.Vector3[];
+        mentalMapNormal: BABYLON.Vector3[];
+        mentalMapIndex: number;
+        mentalMapMaxSize: number;
+        mentalCheckPerFrame: number;
         legPairCount: number;
         get legCount(): number;
         headAnchor: BABYLON.Vector3;

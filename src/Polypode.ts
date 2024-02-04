@@ -27,6 +27,13 @@ namespace Sumuqan {
 
     export class Polypode extends BABYLON.Mesh {
 
+        public mentalMap: BABYLON.Vector3[] = [];
+        public mentalMapNormal: BABYLON.Vector3[] = [];
+        public mentalMapIndex: number = 0;
+        public mentalMapMaxSize: number = 150;
+        
+        public mentalCheckPerFrame: number = 5;
+
         public legPairCount: number = 2;
         public get legCount(): number {
             return this.legPairCount * 2;
@@ -298,6 +305,24 @@ namespace Sumuqan {
         }
 
         private _update = () => {
+            for (let i = 0; i < this.mentalCheckPerFrame; i++) {
+                let distCheck = 1;
+                let origin = this.position.add(this.up.scale(0.3));
+                origin.addInPlace(this.right.scale(-0.5 + Math.random()));
+                origin.addInPlace(this.forward.scale(-0.5 + Math.random()));
+                let dir = this.forward.clone();
+                Mummu.RotateInPlace(dir, this.right, Math.random() * (Math.PI / 1));
+                Mummu.RotateInPlace(dir, this.up, - Math.PI / 3 + Math.random() * 2 * Math.PI / 3);
+                let ray = new BABYLON.Ray(origin, dir, distCheck);
+                let hit = this.getScene().pickWithRay(ray, this.terrainFilter);
+                if (hit.hit && hit.pickedPoint) {
+                    this.mentalMap[this.mentalMapIndex] = hit.pickedPoint;
+                    this.mentalMapNormal[this.mentalMapIndex] = hit.getNormal(true, true);
+                    Mummu.DrawDebugPoint(hit.pickedPoint, this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.Green());
+                    this.mentalMapIndex = (this.mentalMapIndex + 1) % this.mentalMapMaxSize;
+                }
+            }
+
             for (let i = 0; i < this.legPairCount; i++) {
                 BABYLON.Vector3.TransformCoordinatesToRef(this.leftHipAnchors[i], this.body.getWorldMatrix(), this.leftLegs[i].hipPos);
                 BABYLON.Vector3.TransformCoordinatesToRef(this.rightHipAnchors[i], this.body.getWorldMatrix(), this.rightLegs[i].hipPos);
@@ -324,50 +349,48 @@ namespace Sumuqan {
 
                 for (let i = 0; i < this.legPairCount; i++) {
 
-                    for (let j = 0; j < 3; j++) {
-                        BABYLON.Vector3.TransformCoordinatesToRef(this.rightFootTargets[i].scale(1 - j / 3), m, legTarget);
-                        let rayRightLength = 1 * (this.rightLegs[i].upperLegLength + this.rightLegs[i].lowerLegLength);
-                        let rayRightDir = this.up.scale(-1);
-                        let rayRightOrigin = legTarget.subtract(rayRightDir.scale(rayRightLength * 0.25));
-                        let rayRight = new BABYLON.Ray(rayRightOrigin, rayRightDir, rayRightLength);
-                        //Mummu.DrawDebugLine(rayRightOrigin, rayRightOrigin.add(rayRightDir.scale(rayRightLength)), 3);
-                        let pickRight = this.getScene().pickWithRay(rayRight, this.terrainFilter);
-                        let targetRight: BABYLON.Vector3;
-                        if (pickRight.hit && pickRight.pickedPoint) {
-                            j += 3;
-                            targetRight = pickRight.pickedPoint.add(pickRight.getNormal(true, true).scale(this.rightLegs[i].footThickness));
-                            let d = BABYLON.Vector3.DistanceSquared(this.rightLegs[i].foot.position, targetRight) / this.rightLegs[i].totalLength;
-                            //Mummu.DrawDebugLine(this.rightLegs[i].foot.position, targetRight, 60, BABYLON.Color3.Red());
-                            if (d > longestStepDist) {
-                                longestStepDist = d;
-                                legToMove = this.rightLegs[i];
-                                targetPosition = pickRight.pickedPoint;
-                                targetNormal = pickRight.getNormal(true, true);
-                            }
+                    BABYLON.Vector3.TransformCoordinatesToRef(this.rightFootTargets[i], m, legTarget);
+                    let targetRight: BABYLON.Vector3;
+                    let normalRight: BABYLON.Vector3;
+                    let closestMentalMapSqrDist = Infinity;
+
+                    for (let j = 0; j < this.mentalMap.length; j++) {
+                        let mentalPoint = this.mentalMap[j];
+                        let sqrD = BABYLON.Vector3.DistanceSquared(legTarget, mentalPoint);
+                        if (sqrD < closestMentalMapSqrDist) {
+                            targetRight = mentalPoint;
+                            normalRight = this.mentalMapNormal[j];
+                            closestMentalMapSqrDist = sqrD;
                         }
                     }
+                    let d = BABYLON.Vector3.DistanceSquared(this.rightLegs[i].foot.position, targetRight) / this.rightLegs[i].totalLength;
+                    if (d > longestStepDist) {
+                        longestStepDist = d;
+                        legToMove = this.rightLegs[i];
+                        targetPosition = targetRight;
+                        targetNormal = normalRight;
+                    }
 
-                    for (let j = 0; j < 3; j++) {
-                        BABYLON.Vector3.TransformCoordinatesToRef(this.leftFootTargets[i].scale(1 - j / 3), m, legTarget);
-                        let rayLeftLength = 1 * (this.leftLegs[i].upperLegLength + this.leftLegs[i].lowerLegLength);
-                        let rayLeftDir = this.up.scale(-1);
-                        let rayLeftOrigin = legTarget.subtract(rayLeftDir.scale(rayLeftLength * 0.25));
-                        let rayLeft = new BABYLON.Ray(rayLeftOrigin, rayLeftDir, rayLeftLength);
-                        //Mummu.DrawDebugLine(rayLeftOrigin, rayLeftOrigin.add(rayLeftDir.scale(rayLeftLength)), 3);
-                        let pickLeft = this.getScene().pickWithRay(rayLeft, this.terrainFilter);
-                        let targetLeft: BABYLON.Vector3;
-                        if (pickLeft.hit && pickLeft.pickedPoint) {
-                            j += 3;
-                            targetLeft = pickLeft.pickedPoint.add(pickLeft.getNormal(true, true).scale(this.leftLegs[i].footThickness));
-                            let d = BABYLON.Vector3.DistanceSquared(this.leftLegs[i].foot.position, targetLeft) / this.leftLegs[i].totalLength;
-                            //Mummu.DrawDebugLine(this.leftLegs[i].foot.position, targetLeft, 60, BABYLON.Color3.Blue());
-                            if (d > longestStepDist) {
-                                longestStepDist = d;
-                                legToMove = this.leftLegs[i];
-                                targetPosition = pickLeft.pickedPoint;
-                                targetNormal = pickLeft.getNormal(true, true);
-                            }
+                    BABYLON.Vector3.TransformCoordinatesToRef(this.leftFootTargets[i], m, legTarget);
+                    let targetLeft: BABYLON.Vector3;
+                    let normalLeft: BABYLON.Vector3;
+                    closestMentalMapSqrDist = Infinity;
+
+                    for (let j = 0; j < this.mentalMap.length; j++) {
+                        let mentalPoint = this.mentalMap[j];
+                        let sqrD = BABYLON.Vector3.DistanceSquared(legTarget, mentalPoint);
+                        if (sqrD < closestMentalMapSqrDist) {
+                            targetLeft = mentalPoint;
+                            normalLeft = this.mentalMapNormal[j];
+                            closestMentalMapSqrDist = sqrD;
                         }
+                    }
+                    d = BABYLON.Vector3.DistanceSquared(this.leftLegs[i].foot.position, targetLeft) / this.leftLegs[i].totalLength;
+                    if (d > longestStepDist) {
+                        longestStepDist = d;
+                        legToMove = this.leftLegs[i];
+                        targetPosition = targetLeft;
+                        targetNormal = normalLeft;
                     }
                 }
 
@@ -409,7 +432,7 @@ namespace Sumuqan {
             let upFromLeftLeg = BABYLON.Vector3.Cross(averageLeftFoot, this.forward).normalize();
             let upFromLeg = upFromRightLeg.add(upFromLeftLeg).normalize();
             let quatFromLeg = Mummu.QuaternionFromYZAxis(upFromLeg, this.forward);
-            let targetQuat = BABYLON.Quaternion.Slerp(this.rotationQuaternion, quatFromLeg, this.bootyShakiness);
+            let targetQuat = BABYLON.Quaternion.Slerp(this.rotationQuaternion, quatFromLeg, 1);
 
             BABYLON.Quaternion.SlerpToRef(this.body.rotationQuaternion, targetQuat, 0.2, this.body.rotationQuaternion);
             
