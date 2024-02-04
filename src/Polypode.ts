@@ -358,17 +358,21 @@ namespace Sumuqan {
                         let mentalPoint = this.mentalMap[j];
                         let sqrD = BABYLON.Vector3.DistanceSquared(legTarget, mentalPoint);
                         if (sqrD < closestMentalMapSqrDist) {
-                            targetRight = mentalPoint;
-                            normalRight = this.mentalMapNormal[j];
-                            closestMentalMapSqrDist = sqrD;
+                            if (BABYLON.Vector3.DistanceSquared(this.rightLegs[i].hipPos, mentalPoint) < this.rightLegs[i].totalLength) {
+                                targetRight = mentalPoint;
+                                normalRight = this.mentalMapNormal[j];
+                                closestMentalMapSqrDist = sqrD;
+                            }
                         }
                     }
-                    let d = BABYLON.Vector3.DistanceSquared(this.rightLegs[i].foot.position, targetRight) / this.rightLegs[i].totalLength;
-                    if (d > longestStepDist) {
-                        longestStepDist = d;
-                        legToMove = this.rightLegs[i];
-                        targetPosition = targetRight;
-                        targetNormal = normalRight;
+                    if (targetRight) {
+                        let d = BABYLON.Vector3.DistanceSquared(this.rightLegs[i].foot.position, targetRight) / this.rightLegs[i].totalLength;
+                        if (d > longestStepDist) {
+                            longestStepDist = d;
+                            legToMove = this.rightLegs[i];
+                            targetPosition = targetRight;
+                            targetNormal = normalRight;
+                        }
                     }
 
                     BABYLON.Vector3.TransformCoordinatesToRef(this.leftFootTargets[i], m, legTarget);
@@ -380,17 +384,21 @@ namespace Sumuqan {
                         let mentalPoint = this.mentalMap[j];
                         let sqrD = BABYLON.Vector3.DistanceSquared(legTarget, mentalPoint);
                         if (sqrD < closestMentalMapSqrDist) {
-                            targetLeft = mentalPoint;
-                            normalLeft = this.mentalMapNormal[j];
-                            closestMentalMapSqrDist = sqrD;
+                            if (BABYLON.Vector3.DistanceSquared(this.leftLegs[i].hipPos, mentalPoint) < this.leftLegs[i].totalLength) {
+                                targetLeft = mentalPoint;
+                                normalLeft = this.mentalMapNormal[j];
+                                closestMentalMapSqrDist = sqrD;
+                            }
                         }
                     }
-                    d = BABYLON.Vector3.DistanceSquared(this.leftLegs[i].foot.position, targetLeft) / this.leftLegs[i].totalLength;
-                    if (d > longestStepDist) {
-                        longestStepDist = d;
-                        legToMove = this.leftLegs[i];
-                        targetPosition = targetLeft;
-                        targetNormal = normalLeft;
+                    if (targetLeft) {
+                        let d = BABYLON.Vector3.DistanceSquared(this.leftLegs[i].foot.position, targetLeft) / this.leftLegs[i].totalLength;
+                        if (d > longestStepDist) {
+                            longestStepDist = d;
+                            legToMove = this.leftLegs[i];
+                            targetPosition = targetLeft;
+                            targetNormal = normalLeft;
+                        }
                     }
                 }
 
