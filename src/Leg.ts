@@ -64,10 +64,10 @@ namespace Sumuqan {
                 this._kneePos.copyFrom(this.initialKneePos);
             }
             else if (this.kneeMode === KneeMode.Backward) {
-                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace((this.up.add(this.footUp)).normalize()).subtractInPlace(this.forward).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
+                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace(this.footUp.normalize()).subtractInPlace(this.forward).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
             }
             else if (this.kneeMode === KneeMode.Vertical) {
-                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace((this.up.add(this.footUp)).normalize());
+                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace(this.footUp.normalize());
             }
             else if (this.kneeMode === KneeMode.Outward) {
                 this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));

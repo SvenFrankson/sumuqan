@@ -66,6 +66,7 @@ declare namespace Sumuqan {
         mentalMapNormal: BABYLON.Vector3[];
         mentalMapIndex: number;
         mentalMapMaxSize: number;
+        localNormal: BABYLON.Vector3;
         mentalCheckPerFrame: number;
         legPairCount: number;
         get legCount(): number;

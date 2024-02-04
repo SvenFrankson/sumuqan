@@ -52,10 +52,10 @@ var Sumuqan;
                 this._kneePos.copyFrom(this.initialKneePos);
             }
             else if (this.kneeMode === KneeMode.Backward) {
-                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace((this.up.add(this.footUp)).normalize()).subtractInPlace(this.forward).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
+                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace(this.footUp.normalize()).subtractInPlace(this.forward).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
             }
             else if (this.kneeMode === KneeMode.Vertical) {
-                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace((this.up.add(this.footUp)).normalize());
+                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace(this.footUp.normalize());
             }
             else if (this.kneeMode === KneeMode.Outward) {
                 this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
@@ -96,6 +96,7 @@ var Sumuqan;
             this.mentalMapNormal = [];
             this.mentalMapIndex = 0;
             this.mentalMapMaxSize = 150;
+            this.localNormal = BABYLON.Vector3.Up();
             this.mentalCheckPerFrame = 5;
             this.legPairCount = 2;
             this.headAnchor = new BABYLON.Vector3(0, Math.SQRT2, Math.SQRT2);
@@ -114,21 +115,24 @@ var Sumuqan;
             this._update = () => {
                 for (let i = 0; i < this.mentalCheckPerFrame; i++) {
                     let distCheck = 1;
-                    let origin = this.position.add(this.up.scale(0.3));
-                    origin.addInPlace(this.right.scale(-0.5 + Math.random()));
-                    origin.addInPlace(this.forward.scale(-0.5 + Math.random()));
+                    let origin = this.position.add(this.up.scale(0.1));
+                    origin.addInPlace(this.right.scale(-0.1 + 0.2 * Math.random()));
+                    origin.addInPlace(this.forward.scale(-0.1 + 0.2 * Math.random()));
                     let dir = this.forward.clone();
-                    Mummu.RotateInPlace(dir, this.right, Math.random() * (Math.PI / 1));
-                    Mummu.RotateInPlace(dir, this.up, -Math.PI / 3 + Math.random() * 2 * Math.PI / 3);
+                    Mummu.RotateInPlace(dir, this.right, Math.random() * (Math.PI / 1.1));
+                    Mummu.RotateInPlace(dir, this.up, -Math.PI / 2 + Math.random() * 2 * Math.PI / 2);
                     let ray = new BABYLON.Ray(origin, dir, distCheck);
                     let hit = this.getScene().pickWithRay(ray, this.terrainFilter);
+                    Mummu.DrawDebugLine(ray.origin, ray.origin.add(ray.direction.scale(distCheck)), this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.White());
                     if (hit.hit && hit.pickedPoint) {
                         this.mentalMap[this.mentalMapIndex] = hit.pickedPoint;
                         this.mentalMapNormal[this.mentalMapIndex] = hit.getNormal(true, true);
-                        Mummu.DrawDebugPoint(hit.pickedPoint, this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.Green());
+                        this.localNormal.scaleInPlace(0.97).addInPlace(this.mentalMapNormal[this.mentalMapIndex].scale(0.03));
+                        Mummu.DrawDebugHit(hit.pickedPoint, this.mentalMapNormal[this.mentalMapIndex], this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.Green());
                         this.mentalMapIndex = (this.mentalMapIndex + 1) % this.mentalMapMaxSize;
                     }
                 }
+                this.localNormal.normalize();
                 for (let i = 0; i < this.legPairCount; i++) {
                     BABYLON.Vector3.TransformCoordinatesToRef(this.leftHipAnchors[i], this.body.getWorldMatrix(), this.leftLegs[i].hipPos);
                     BABYLON.Vector3.TransformCoordinatesToRef(this.rightHipAnchors[i], this.body.getWorldMatrix(), this.rightLegs[i].hipPos);
@@ -202,7 +206,7 @@ var Sumuqan;
                     if (longestStepDist > 0.01) {
                         this._stepping++;
                         //Mummu.DrawDebugLine(legToMove.hipPos, targetPosition, 60, BABYLON.Color3.Yellow());
-                        this.step(legToMove, targetPosition, targetNormal, this.forward).then(() => { this._stepping--; });
+                        this.step(legToMove, targetPosition, targetNormal.scale(0.3).add(this.up.scale(0.7)), this.forward).then(() => { this._stepping--; });
                     }
                 }
                 for (let i = 0; i < this.legPairCount; i++) {
@@ -229,12 +233,8 @@ var Sumuqan;
                 bodyPos.addInPlace(offset);
                 averageRightFoot.subtractInPlace(this.body.position);
                 averageLeftFoot.subtractInPlace(this.body.position);
-                let upFromRightLeg = BABYLON.Vector3.Cross(this.forward, averageRightFoot).normalize();
-                let upFromLeftLeg = BABYLON.Vector3.Cross(averageLeftFoot, this.forward).normalize();
-                let upFromLeg = upFromRightLeg.add(upFromLeftLeg).normalize();
-                let quatFromLeg = Mummu.QuaternionFromYZAxis(upFromLeg, this.forward);
-                let targetQuat = BABYLON.Quaternion.Slerp(this.rotationQuaternion, quatFromLeg, 1);
-                BABYLON.Quaternion.SlerpToRef(this.body.rotationQuaternion, targetQuat, 0.2, this.body.rotationQuaternion);
+                let quatFromLeg = Mummu.QuaternionFromYZAxis(this.localNormal, this.forward);
+                BABYLON.Quaternion.SlerpToRef(this.body.rotationQuaternion, quatFromLeg, 0.1, this.body.rotationQuaternion);
                 Mummu.QuaternionFromZYAxisToRef(this.forward, this.up, this.head.rotationQuaternion);
                 BABYLON.Vector3.LerpToRef(this.body.position, bodyPos, 0.1, this.body.position);
             };
