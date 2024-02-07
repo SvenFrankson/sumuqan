@@ -171,8 +171,8 @@ var Sumuqan;
             this.legs = [];
             this.antennas = [];
             this.povOffset = new BABYLON.Vector3(0, 0.4, 0);
-            this.povAlpha = 3 * Math.PI / 2;
-            this.povBetaMin = Math.PI / 12;
+            this.povAlpha = 5 * Math.PI / 3;
+            this.povBetaMin = Math.PI / 10;
             this.povBetaMax = Math.PI / 2.1;
             this.povRadiusMax = 1;
             this.povRadiusMin = 0.5;
@@ -578,6 +578,19 @@ var Sumuqan;
                 };
                 this.getScene().onBeforeRenderObservable.add(animationCB);
             });
+        }
+        updateBodyCollidersMeshes() {
+            while (this.debugBodyCollidersMeshes.length > 0) {
+                this.debugBodyCollidersMeshes.pop().dispose();
+            }
+            for (let i = 0; i < this.bodyColliders.length; i++) {
+                let collider = this.bodyColliders[i];
+                let sphere = BABYLON.MeshBuilder.CreateSphere("bodycollider-" + i, { diameter: 2 * collider.radius });
+                sphere.material = this._debugColliderMaterial;
+                sphere.position.copyFrom(collider.localCenter);
+                sphere.parent = collider.parent;
+                this.debugBodyCollidersMeshes[i] = sphere;
+            }
         }
     }
     Sumuqan.Polypode = Polypode;

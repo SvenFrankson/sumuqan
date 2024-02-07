@@ -134,6 +134,7 @@ declare namespace Sumuqan {
         initialize(): Promise<void>;
         private step;
         private _update;
+        updateBodyCollidersMeshes(): void;
     }
 }
 declare namespace Sumuqan {

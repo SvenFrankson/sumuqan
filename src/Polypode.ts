@@ -124,8 +124,8 @@ namespace Sumuqan {
         public antennas: Antenna[] = [];
 
         public povOffset: BABYLON.Vector3 = new BABYLON.Vector3(0, 0.4, 0);
-        public povAlpha: number = 3 * Math.PI / 2;
-        public povBetaMin: number = Math.PI / 12;
+        public povAlpha: number = 5 * Math.PI / 3;
+        public povBetaMin: number = Math.PI / 10;
         public povBetaMax: number = Math.PI / 2.1;
         public povRadiusMax: number = 1;
         public povRadiusMin: number = 0.5;
@@ -544,6 +544,22 @@ namespace Sumuqan {
             Mummu.QuaternionFromZYAxisToRef(this.forward, this.up, this.head.rotationQuaternion);
 
             BABYLON.Vector3.LerpToRef(this.body.position, bodyPos, 0.1, this.body.position);
+        }
+
+        public updateBodyCollidersMeshes(): void {
+            while (this.debugBodyCollidersMeshes.length > 0) {
+                this.debugBodyCollidersMeshes.pop().dispose();
+            }
+
+            for (let i = 0; i < this.bodyColliders.length; i++) {
+                let collider = this.bodyColliders[i];
+                let sphere = BABYLON.MeshBuilder.CreateSphere("bodycollider-" + i, { diameter: 2 * collider.radius });
+                sphere.material = this._debugColliderMaterial;
+                sphere.position.copyFrom(collider.localCenter);
+                sphere.parent = collider.parent;
+
+                this.debugBodyCollidersMeshes[i] = sphere;
+            }
         }
     }
 }
