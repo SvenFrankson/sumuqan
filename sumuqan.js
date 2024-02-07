@@ -19,9 +19,9 @@ var Sumuqan;
             if (isFinite(dt)) {
                 let dir = this.forward;
                 let ray = new BABYLON.Ray(this.absolutePosition, dir, this.length);
-                let pick = this.getScene().pickWithRay(ray, this.polypode.terrainFilter);
-                if (pick.hit) {
-                    let n = pick.getNormal(true);
+                let intersection = Mummu.RayCollidersIntersection(ray, this.polypode.terrain);
+                if (intersection.hit) {
+                    let n = intersection.normal;
                     if (BABYLON.Vector3.Dot(n, this.polypode.up) > 0) {
                         this.betaSpeed -= Math.PI * 0.2;
                     }
@@ -144,6 +144,12 @@ var Sumuqan;
     class Polypode extends BABYLON.Mesh {
         constructor(name, prop) {
             super(name);
+            this.bodyColliders = [];
+            this.terrain = [];
+            // Debug collision display [v]
+            this._showDebug = false;
+            this.debugBodyCollidersMeshes = [];
+            // [^] Debug collision display
             this.mentalMap = [];
             this.mentalMapNormal = [];
             this.mentalMapIndex = 0;
@@ -176,25 +182,29 @@ var Sumuqan;
                 this.antennas.forEach(antenna => {
                     antenna.update(dt);
                 });
+                // Terrain scan [v]
                 let origin = BABYLON.Vector3.TransformCoordinates(this.povOffset, this.getWorldMatrix());
                 for (let i = 0; i < this.mentalCheckPerFrame; i++) {
                     let distCheck = this.povRadiusMax;
                     let dir = Mummu.RandomInSphereCut(this.forward, -this.povAlpha * 0.5, this.povAlpha * 0.5, this.povBetaMin, this.povBetaMax, this.up);
                     let ray = new BABYLON.Ray(origin, dir, distCheck);
-                    let hit = this.getScene().pickWithRay(ray, this.terrainFilter);
+                    let intersection = Mummu.RayCollidersIntersection(ray, this.terrain);
                     //Mummu.DrawDebugLine(ray.origin, ray.origin.add(ray.direction.scale(distCheck)), this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.White());
-                    if (hit.hit && hit.pickedPoint) {
-                        let n = hit.getNormal(true, true);
+                    if (intersection.hit) {
+                        let n = intersection.normal;
                         if (BABYLON.Vector3.Dot(n, this.up) > -0.5) {
-                            this.mentalMap[this.mentalMapIndex] = hit.pickedPoint;
+                            this.mentalMap[this.mentalMapIndex] = intersection.point;
                             this.mentalMapNormal[this.mentalMapIndex] = n;
                             this.localNormal.scaleInPlace(0.98).addInPlace(this.mentalMapNormal[this.mentalMapIndex].scale(0.02));
-                            Mummu.DrawDebugHit(hit.pickedPoint, this.mentalMapNormal[this.mentalMapIndex], this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.Green());
+                            if (this._showDebug) {
+                                Mummu.DrawDebugHit(intersection.point, this.mentalMapNormal[this.mentalMapIndex], this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.Green());
+                            }
                             this.mentalMapIndex = (this.mentalMapIndex + 1) % this.mentalMapMaxSize;
                         }
                     }
                 }
                 this.localNormal.normalize();
+                // [^] Terrain scan
                 for (let i = 0; i < this.legPairCount; i++) {
                     BABYLON.Vector3.TransformCoordinatesToRef(this.leftHipAnchors[i], this.body.getWorldMatrix(), this.leftLegs[i].hipPos);
                     BABYLON.Vector3.TransformCoordinatesToRef(this.rightHipAnchors[i], this.body.getWorldMatrix(), this.rightLegs[i].hipPos);
@@ -468,6 +478,32 @@ var Sumuqan;
             });
             this.debugPovMesh.parent = this;
             this.debugPovMesh.position = this.povOffset;
+            this.debugPovMesh.isVisible = this._showDebug;
+        }
+        get showDebug() {
+            return this._showDebug;
+        }
+        set showDebug(v) {
+            this._showDebug = v;
+            this.debugPovMesh.isVisible = this._showDebug;
+        }
+        get debugColliderMaterial() {
+            return this._debugColliderMaterial;
+        }
+        set debugColliderMaterial(mat) {
+            this.debugBodyCollidersMeshes.forEach(mesh => {
+                mesh.material = mat;
+            });
+            this._debugColliderMaterial = mat;
+        }
+        get debugPovMaterial() {
+            return this._debugPovMaterial;
+        }
+        set debugPovMaterial(mat) {
+            if (this.debugPovMesh) {
+                this.debugPovMesh.material = mat;
+            }
+            this._debugPovMaterial = mat;
         }
         get legCount() {
             return this.legPairCount * 2;

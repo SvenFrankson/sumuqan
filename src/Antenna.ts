@@ -20,9 +20,9 @@ namespace Sumuqan {
             if (isFinite(dt)) {
                 let dir = this.forward;
                 let ray = new BABYLON.Ray(this.absolutePosition, dir, this.length);
-                let pick = this.getScene().pickWithRay(ray, this.polypode.terrainFilter);
-                if (pick.hit) {
-                    let n = pick.getNormal(true);
+                let intersection = Mummu.RayCollidersIntersection(ray, this.polypode.terrain);
+                if (intersection.hit) {
+                    let n = intersection.normal;
                     if (BABYLON.Vector3.Dot(n, this.polypode.up) > 0) {
                         this.betaSpeed -= Math.PI * 0.2;
                     }

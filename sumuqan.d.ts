@@ -79,6 +79,19 @@ declare namespace Sumuqan {
         antennaLength?: number;
     }
     class Polypode extends BABYLON.Mesh {
+        bodyColliders: Mummu.SphereCollider[];
+        terrain: (Mummu.Collider | BABYLON.Mesh)[];
+        protected _showDebug: boolean;
+        get showDebug(): boolean;
+        set showDebug(v: boolean);
+        debugPovMesh: BABYLON.Mesh;
+        debugBodyCollidersMeshes: BABYLON.Mesh[];
+        private _debugColliderMaterial;
+        get debugColliderMaterial(): BABYLON.Material;
+        set debugColliderMaterial(mat: BABYLON.Material);
+        private _debugPovMaterial;
+        get debugPovMaterial(): BABYLON.Material;
+        set debugPovMaterial(mat: BABYLON.Material);
         mentalMap: BABYLON.Vector3[];
         mentalMapNormal: BABYLON.Vector3[];
         mentalMapIndex: number;
@@ -109,7 +122,6 @@ declare namespace Sumuqan {
         rightLegs: Leg[];
         legs: Leg[];
         antennas: Antenna[];
-        debugPovMesh: BABYLON.Mesh;
         povOffset: BABYLON.Vector3;
         povAlpha: number;
         povBetaMin: number;
@@ -117,7 +129,6 @@ declare namespace Sumuqan {
         povRadiusMax: number;
         povRadiusMin: number;
         private _stepping;
-        terrainFilter: (m: BABYLON.AbstractMesh) => boolean;
         constructor(name: string, prop: IPolypodeProps);
         setPosition(p: BABYLON.Vector3): void;
         initialize(): Promise<void>;

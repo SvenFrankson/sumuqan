@@ -31,6 +31,45 @@ namespace Sumuqan {
 
     export class Polypode extends BABYLON.Mesh {
 
+        public bodyColliders: Mummu.SphereCollider[] = [];
+        public terrain: (Mummu.Collider | BABYLON.Mesh)[] = [];
+
+        // Debug collision display [v]
+        protected _showDebug: boolean = false;
+        public get showDebug(): boolean {
+            return this._showDebug;
+        }
+        public set showDebug(v: boolean) {
+            this._showDebug = v;
+            this.debugPovMesh.isVisible = this._showDebug;
+        }
+
+        public debugPovMesh: BABYLON.Mesh;
+        public debugBodyCollidersMeshes: BABYLON.Mesh[] = [];
+
+        private _debugColliderMaterial: BABYLON.Material;
+        public get debugColliderMaterial(): BABYLON.Material {
+            return this._debugColliderMaterial;
+        }
+        public set debugColliderMaterial(mat: BABYLON.Material) {
+            this.debugBodyCollidersMeshes.forEach(mesh => {
+                mesh.material = mat;
+            });
+            this._debugColliderMaterial = mat;
+        }
+
+        private _debugPovMaterial: BABYLON.Material;
+        public get debugPovMaterial(): BABYLON.Material {
+            return this._debugPovMaterial;
+        }
+        public set debugPovMaterial(mat: BABYLON.Material) {
+            if (this.debugPovMesh) {
+                this.debugPovMesh.material = mat;
+            }
+            this._debugPovMaterial = mat;
+        }
+        // [^] Debug collision display
+
         public mentalMap: BABYLON.Vector3[] = [];
         public mentalMapNormal: BABYLON.Vector3[] = [];
         public mentalMapIndex: number = 0;
@@ -84,7 +123,6 @@ namespace Sumuqan {
         public legs: Leg[] = [];
         public antennas: Antenna[] = [];
 
-        public debugPovMesh: BABYLON.Mesh;
         public povOffset: BABYLON.Vector3 = new BABYLON.Vector3(0, 0.4, 0);
         public povAlpha: number = 3 * Math.PI / 2;
         public povBetaMin: number = Math.PI / 12;
@@ -93,8 +131,6 @@ namespace Sumuqan {
         public povRadiusMin: number = 0.5;
 
         private _stepping: number = 0;
-
-        public terrainFilter: (m: BABYLON.AbstractMesh) => boolean;
 
         constructor(name: string, prop: IPolypodeProps) {
             super(name);
@@ -290,6 +326,7 @@ namespace Sumuqan {
             )
             this.debugPovMesh.parent = this;
             this.debugPovMesh.position = this.povOffset;
+            this.debugPovMesh.isVisible = this._showDebug;
         }
 
         public setPosition(p: BABYLON.Vector3): void {
@@ -361,25 +398,31 @@ namespace Sumuqan {
             this.antennas.forEach(antenna => {
                 antenna.update(dt);
             })
+
+            
+            // Terrain scan [v]
             let origin = BABYLON.Vector3.TransformCoordinates(this.povOffset, this.getWorldMatrix());
             for (let i = 0; i < this.mentalCheckPerFrame; i++) {
                 let distCheck = this.povRadiusMax;
                 let dir = Mummu.RandomInSphereCut(this.forward, - this.povAlpha * 0.5, this.povAlpha * 0.5, this.povBetaMin, this.povBetaMax, this.up);
                 let ray = new BABYLON.Ray(origin, dir, distCheck);
-                let hit = this.getScene().pickWithRay(ray, this.terrainFilter);
+                let intersection = Mummu.RayCollidersIntersection(ray, this.terrain);
                 //Mummu.DrawDebugLine(ray.origin, ray.origin.add(ray.direction.scale(distCheck)), this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.White());
-                if (hit.hit && hit.pickedPoint) {
-                    let n = hit.getNormal(true, true);
+                if (intersection.hit) {
+                    let n = intersection.normal;
                     if (BABYLON.Vector3.Dot(n, this.up) > - 0.5) {
-                        this.mentalMap[this.mentalMapIndex] = hit.pickedPoint;
+                        this.mentalMap[this.mentalMapIndex] = intersection.point;
                         this.mentalMapNormal[this.mentalMapIndex] = n;
                         this.localNormal.scaleInPlace(0.98).addInPlace(this.mentalMapNormal[this.mentalMapIndex].scale(0.02));
-                        Mummu.DrawDebugHit(hit.pickedPoint, this.mentalMapNormal[this.mentalMapIndex], this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.Green());
+                        if (this._showDebug) {
+                            Mummu.DrawDebugHit(intersection.point, this.mentalMapNormal[this.mentalMapIndex], this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.Green());
+                        }
                         this.mentalMapIndex = (this.mentalMapIndex + 1) % this.mentalMapMaxSize;
                     }
                 }
             }
             this.localNormal.normalize();
+            // [^] Terrain scan
 
             for (let i = 0; i < this.legPairCount; i++) {
                 BABYLON.Vector3.TransformCoordinatesToRef(this.leftHipAnchors[i], this.body.getWorldMatrix(), this.leftLegs[i].hipPos);
