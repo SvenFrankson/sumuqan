@@ -2,6 +2,19 @@
 /// <reference path="../nabu/nabu.d.ts" />
 /// <reference path="../mummu/mummu.d.ts" />
 declare namespace Sumuqan {
+    class Antenna extends BABYLON.Mesh {
+        polypode: Polypode;
+        isLeft?: boolean;
+        alpha0: number;
+        alphaSpeed: number;
+        beta0: number;
+        betaSpeed: number;
+        length: number;
+        constructor(polypode: Polypode, isLeft?: boolean);
+        update(dt: number): void;
+    }
+}
+declare namespace Sumuqan {
     enum KneeMode {
         Backward = 0,
         Vertical = 1,
@@ -39,7 +52,6 @@ declare namespace Sumuqan {
 declare namespace Sumuqan {
     interface IPolypodeProps {
         legPairsCount: number;
-        headAnchor?: BABYLON.Vector3;
         hipAnchors?: BABYLON.Vector3[];
         rightHipAnchors?: BABYLON.Vector3[];
         leftHipAnchors?: BABYLON.Vector3[];
@@ -60,6 +72,11 @@ declare namespace Sumuqan {
         bootyShakiness?: number;
         bodyLocalOffset?: BABYLON.Vector3;
         bodyWorldOffset?: BABYLON.Vector3;
+        headAnchor?: BABYLON.Vector3;
+        antennaAnchor?: BABYLON.Vector3;
+        antennaAlphaZero?: number;
+        antennaBetaZero?: number;
+        antennaLength?: number;
     }
     class Polypode extends BABYLON.Mesh {
         mentalMap: BABYLON.Vector3[];
@@ -91,6 +108,7 @@ declare namespace Sumuqan {
         leftLegs: Leg[];
         rightLegs: Leg[];
         legs: Leg[];
+        antennas: Antenna[];
         debugPovMesh: BABYLON.Mesh;
         povOffset: BABYLON.Vector3;
         povAlpha: number;

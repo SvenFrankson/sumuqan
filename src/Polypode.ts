@@ -2,7 +2,6 @@ namespace Sumuqan {
 
     export interface IPolypodeProps {
         legPairsCount: number;
-        headAnchor?: BABYLON.Vector3;
         hipAnchors?: BABYLON.Vector3[];
         rightHipAnchors?: BABYLON.Vector3[];
         leftHipAnchors?: BABYLON.Vector3[];
@@ -23,6 +22,11 @@ namespace Sumuqan {
         bootyShakiness?: number;
         bodyLocalOffset?: BABYLON.Vector3;
         bodyWorldOffset?: BABYLON.Vector3;
+        headAnchor?: BABYLON.Vector3;
+        antennaAnchor?: BABYLON.Vector3;
+        antennaAlphaZero?: number;
+        antennaBetaZero?: number;
+        antennaLength?: number;
     }
 
     export class Polypode extends BABYLON.Mesh {
@@ -78,12 +82,13 @@ namespace Sumuqan {
         public leftLegs: Leg[] = [];
         public rightLegs: Leg[] = [];
         public legs: Leg[] = [];
+        public antennas: Antenna[] = [];
 
         public debugPovMesh: BABYLON.Mesh;
         public povOffset: BABYLON.Vector3 = new BABYLON.Vector3(0, 0.4, 0);
         public povAlpha: number = 3 * Math.PI / 2;
-        public povBetaMin: number = Math.PI / 16;
-        public povBetaMax: number = Math.PI / 3;
+        public povBetaMin: number = Math.PI / 12;
+        public povBetaMax: number = Math.PI / 2.1;
         public povRadiusMax: number = 1;
         public povRadiusMin: number = 0.5;
 
@@ -99,9 +104,6 @@ namespace Sumuqan {
             // Create all required meshes
             this.body = BABYLON.MeshBuilder.CreateSphere("body", { diameterX: 1, diameterY: 1, diameterZ: 1.5 });
             this.body.rotationQuaternion = BABYLON.Quaternion.Identity();
-            
-            this.head = BABYLON.MeshBuilder.CreateSphere("head", { diameterX: 0.5, diameterY: 0.5, diameterZ: 0.75 });
-            this.head.rotationQuaternion = BABYLON.Quaternion.Identity();
 
             for (let i = 0; i < this.legPairCount; i++) {
                 this.rightLegs[i] = new Leg();
@@ -110,6 +112,32 @@ namespace Sumuqan {
                 this.leftLegs[i].kneeMode = KneeMode.Vertical;
             }
             this.legs = [...this.rightLegs, ...this.leftLegs];
+            
+            this.head = BABYLON.MeshBuilder.CreateSphere("head", { diameterX: 0.5, diameterY: 0.5, diameterZ: 0.75 });
+            this.head.rotationQuaternion = BABYLON.Quaternion.Identity();
+
+            if (Mummu.IsFinite(prop.antennaAnchor)) {
+                this.antennas = [
+                    new Antenna(this, false),
+                    new Antenna(this, true)
+                ];
+                this.antennas[0].position.copyFrom(prop.antennaAnchor);
+                this.antennas[1].position.copyFrom(prop.antennaAnchor);
+                this.antennas[1].position.x *= - 1;
+
+                if (isFinite(prop.antennaAlphaZero)) {
+                    this.antennas[0].alpha0 = prop.antennaAlphaZero;
+                    this.antennas[1].alpha0 = prop.antennaAlphaZero;
+                }
+                if (isFinite(prop.antennaBetaZero)) {
+                    this.antennas[0].beta0 = prop.antennaBetaZero;
+                    this.antennas[1].beta0 = prop.antennaBetaZero;
+                }
+                if (isFinite(prop.antennaLength)) {
+                    this.antennas[0].length = prop.antennaLength;
+                    this.antennas[1].length = prop.antennaLength;
+                }
+            }
 
             /*
             for (let i = 0; i < this.legPairCount; i++) {
@@ -328,6 +356,11 @@ namespace Sumuqan {
         }
 
         private _update = () => {
+            let dt = this.getScene().deltaTime / 1000;
+
+            this.antennas.forEach(antenna => {
+                antenna.update(dt);
+            })
             let origin = BABYLON.Vector3.TransformCoordinates(this.povOffset, this.getWorldMatrix());
             for (let i = 0; i < this.mentalCheckPerFrame; i++) {
                 let distCheck = this.povRadiusMax;
@@ -336,11 +369,14 @@ namespace Sumuqan {
                 let hit = this.getScene().pickWithRay(ray, this.terrainFilter);
                 //Mummu.DrawDebugLine(ray.origin, ray.origin.add(ray.direction.scale(distCheck)), this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.White());
                 if (hit.hit && hit.pickedPoint) {
-                    this.mentalMap[this.mentalMapIndex] = hit.pickedPoint;
-                    this.mentalMapNormal[this.mentalMapIndex] = hit.getNormal(true, true);
-                    this.localNormal.scaleInPlace(0.97).addInPlace(this.mentalMapNormal[this.mentalMapIndex].scale(0.03));
-                    Mummu.DrawDebugHit(hit.pickedPoint, this.mentalMapNormal[this.mentalMapIndex], this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.Green());
-                    this.mentalMapIndex = (this.mentalMapIndex + 1) % this.mentalMapMaxSize;
+                    let n = hit.getNormal(true, true);
+                    if (BABYLON.Vector3.Dot(n, this.up) > - 0.5) {
+                        this.mentalMap[this.mentalMapIndex] = hit.pickedPoint;
+                        this.mentalMapNormal[this.mentalMapIndex] = n;
+                        this.localNormal.scaleInPlace(0.98).addInPlace(this.mentalMapNormal[this.mentalMapIndex].scale(0.02));
+                        Mummu.DrawDebugHit(hit.pickedPoint, this.mentalMapNormal[this.mentalMapIndex], this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.Green());
+                        this.mentalMapIndex = (this.mentalMapIndex + 1) % this.mentalMapMaxSize;
+                    }
                 }
             }
             this.localNormal.normalize();

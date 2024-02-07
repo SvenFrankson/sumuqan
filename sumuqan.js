@@ -1,3 +1,55 @@
+var Sumuqan;
+(function (Sumuqan) {
+    class Antenna extends BABYLON.Mesh {
+        constructor(polypode, isLeft) {
+            super(polypode.name + "-antenna-" + (isLeft ? "l" : "r"));
+            this.polypode = polypode;
+            this.isLeft = isLeft;
+            this.alpha0 = Math.PI / 5;
+            this.alphaSpeed = 0;
+            this.beta0 = Math.PI / 12;
+            this.betaSpeed = 0;
+            this.length = 0.5;
+            if (this.isLeft) {
+                this.alpha0 *= -1;
+            }
+            this.parent = this.polypode.head;
+        }
+        update(dt) {
+            if (isFinite(dt)) {
+                let dir = this.forward;
+                let ray = new BABYLON.Ray(this.absolutePosition, dir, this.length);
+                let pick = this.getScene().pickWithRay(ray, this.polypode.terrainFilter);
+                if (pick.hit) {
+                    let n = pick.getNormal(true);
+                    if (BABYLON.Vector3.Dot(n, this.polypode.up) > 0) {
+                        this.betaSpeed -= Math.PI * 0.2;
+                    }
+                    else {
+                        this.betaSpeed += Math.PI * 0.2;
+                    }
+                    if (BABYLON.Vector3.Dot(n, this.polypode.right) > 0) {
+                        this.alphaSpeed -= Math.PI * 0.2;
+                    }
+                    else {
+                        this.alphaSpeed += Math.PI * 0.2;
+                    }
+                }
+                else {
+                    this.alphaSpeed += 0.1 * (this.alpha0 - this.rotation.y);
+                    this.betaSpeed += 0.1 * (this.beta0 - this.rotation.x);
+                }
+                this.alphaSpeed *= 0.95;
+                this.betaSpeed *= 0.95;
+                this.rotation.x += this.betaSpeed * dt;
+                this.rotation.x = Nabu.MinMax(this.rotation.x, -Math.PI / 2, Math.PI / 2);
+                this.rotation.y += this.alphaSpeed * dt;
+                this.rotation.y = Nabu.MinMax(this.rotation.y, -Math.PI / 3, Math.PI / 3);
+            }
+        }
+    }
+    Sumuqan.Antenna = Antenna;
+})(Sumuqan || (Sumuqan = {}));
 /// <reference path="../lib/babylon.d.ts"/>
 /// <reference path="../../nabu/nabu.d.ts"/>
 /// <reference path="../../mummu/mummu.d.ts"/>
@@ -111,14 +163,19 @@ var Sumuqan;
             this.leftLegs = [];
             this.rightLegs = [];
             this.legs = [];
+            this.antennas = [];
             this.povOffset = new BABYLON.Vector3(0, 0.4, 0);
             this.povAlpha = 3 * Math.PI / 2;
-            this.povBetaMin = Math.PI / 16;
-            this.povBetaMax = Math.PI / 3;
+            this.povBetaMin = Math.PI / 12;
+            this.povBetaMax = Math.PI / 2.1;
             this.povRadiusMax = 1;
             this.povRadiusMin = 0.5;
             this._stepping = 0;
             this._update = () => {
+                let dt = this.getScene().deltaTime / 1000;
+                this.antennas.forEach(antenna => {
+                    antenna.update(dt);
+                });
                 let origin = BABYLON.Vector3.TransformCoordinates(this.povOffset, this.getWorldMatrix());
                 for (let i = 0; i < this.mentalCheckPerFrame; i++) {
                     let distCheck = this.povRadiusMax;
@@ -127,11 +184,14 @@ var Sumuqan;
                     let hit = this.getScene().pickWithRay(ray, this.terrainFilter);
                     //Mummu.DrawDebugLine(ray.origin, ray.origin.add(ray.direction.scale(distCheck)), this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.White());
                     if (hit.hit && hit.pickedPoint) {
-                        this.mentalMap[this.mentalMapIndex] = hit.pickedPoint;
-                        this.mentalMapNormal[this.mentalMapIndex] = hit.getNormal(true, true);
-                        this.localNormal.scaleInPlace(0.97).addInPlace(this.mentalMapNormal[this.mentalMapIndex].scale(0.03));
-                        Mummu.DrawDebugHit(hit.pickedPoint, this.mentalMapNormal[this.mentalMapIndex], this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.Green());
-                        this.mentalMapIndex = (this.mentalMapIndex + 1) % this.mentalMapMaxSize;
+                        let n = hit.getNormal(true, true);
+                        if (BABYLON.Vector3.Dot(n, this.up) > -0.5) {
+                            this.mentalMap[this.mentalMapIndex] = hit.pickedPoint;
+                            this.mentalMapNormal[this.mentalMapIndex] = n;
+                            this.localNormal.scaleInPlace(0.98).addInPlace(this.mentalMapNormal[this.mentalMapIndex].scale(0.02));
+                            Mummu.DrawDebugHit(hit.pickedPoint, this.mentalMapNormal[this.mentalMapIndex], this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.Green());
+                            this.mentalMapIndex = (this.mentalMapIndex + 1) % this.mentalMapMaxSize;
+                        }
                     }
                 }
                 this.localNormal.normalize();
@@ -244,8 +304,6 @@ var Sumuqan;
             // Create all required meshes
             this.body = BABYLON.MeshBuilder.CreateSphere("body", { diameterX: 1, diameterY: 1, diameterZ: 1.5 });
             this.body.rotationQuaternion = BABYLON.Quaternion.Identity();
-            this.head = BABYLON.MeshBuilder.CreateSphere("head", { diameterX: 0.5, diameterY: 0.5, diameterZ: 0.75 });
-            this.head.rotationQuaternion = BABYLON.Quaternion.Identity();
             for (let i = 0; i < this.legPairCount; i++) {
                 this.rightLegs[i] = new Sumuqan.Leg();
                 this.rightLegs[i].kneeMode = Sumuqan.KneeMode.Vertical;
@@ -253,6 +311,29 @@ var Sumuqan;
                 this.leftLegs[i].kneeMode = Sumuqan.KneeMode.Vertical;
             }
             this.legs = [...this.rightLegs, ...this.leftLegs];
+            this.head = BABYLON.MeshBuilder.CreateSphere("head", { diameterX: 0.5, diameterY: 0.5, diameterZ: 0.75 });
+            this.head.rotationQuaternion = BABYLON.Quaternion.Identity();
+            if (Mummu.IsFinite(prop.antennaAnchor)) {
+                this.antennas = [
+                    new Sumuqan.Antenna(this, false),
+                    new Sumuqan.Antenna(this, true)
+                ];
+                this.antennas[0].position.copyFrom(prop.antennaAnchor);
+                this.antennas[1].position.copyFrom(prop.antennaAnchor);
+                this.antennas[1].position.x *= -1;
+                if (isFinite(prop.antennaAlphaZero)) {
+                    this.antennas[0].alpha0 = prop.antennaAlphaZero;
+                    this.antennas[1].alpha0 = prop.antennaAlphaZero;
+                }
+                if (isFinite(prop.antennaBetaZero)) {
+                    this.antennas[0].beta0 = prop.antennaBetaZero;
+                    this.antennas[1].beta0 = prop.antennaBetaZero;
+                }
+                if (isFinite(prop.antennaLength)) {
+                    this.antennas[0].length = prop.antennaLength;
+                    this.antennas[1].length = prop.antennaLength;
+                }
+            }
             /*
             for (let i = 0; i < this.legPairCount; i++) {
                 this.rightFootTargets[i] = new BABYLON.Mesh("right-foot-target-" + i);
