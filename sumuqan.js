@@ -111,17 +111,21 @@ var Sumuqan;
             this.leftLegs = [];
             this.rightLegs = [];
             this.legs = [];
+            this.povOffset = new BABYLON.Vector3(0, 0.4, 0);
+            this.povAlpha = 3 * Math.PI / 2;
+            this.povBetaMin = Math.PI / 16;
+            this.povBetaMax = Math.PI / 3;
+            this.povRadiusMax = 1;
+            this.povRadiusMin = 0.5;
             this._stepping = 0;
             this._update = () => {
+                let origin = BABYLON.Vector3.TransformCoordinates(this.povOffset, this.getWorldMatrix());
                 for (let i = 0; i < this.mentalCheckPerFrame; i++) {
-                    let distCheck = 1;
-                    let origin = this.position.add(this.up.scale(0.3));
-                    origin.addInPlace(this.right.scale(-0.1 + 0.2 * Math.random()));
-                    origin.addInPlace(this.forward.scale(-0.1 + 0.2 * Math.random()));
-                    let dir = Mummu.RandomInSphereCut(this.forward, -Math.PI / 1.5, Math.PI / 1.5, 0, Math.PI / 2, this.up);
+                    let distCheck = this.povRadiusMax;
+                    let dir = Mummu.RandomInSphereCut(this.forward, -this.povAlpha * 0.5, this.povAlpha * 0.5, this.povBetaMin, this.povBetaMax, this.up);
                     let ray = new BABYLON.Ray(origin, dir, distCheck);
                     let hit = this.getScene().pickWithRay(ray, this.terrainFilter);
-                    Mummu.DrawDebugLine(ray.origin, ray.origin.add(ray.direction.scale(distCheck)), this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.White());
+                    //Mummu.DrawDebugLine(ray.origin, ray.origin.add(ray.direction.scale(distCheck)), this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.White());
                     if (hit.hit && hit.pickedPoint) {
                         this.mentalMap[this.mentalMapIndex] = hit.pickedPoint;
                         this.mentalMapNormal[this.mentalMapIndex] = hit.getNormal(true, true);
@@ -373,6 +377,16 @@ var Sumuqan;
             if (Mummu.IsFinite(prop.bodyWorldOffset)) {
                 this.bodyWorldOffset = prop.bodyWorldOffset;
             }
+            this.debugPovMesh = Mummu.CreateSphereCut("debug-pov-mesh", {
+                dir: BABYLON.Vector3.Forward(),
+                alpha: this.povAlpha,
+                betaMin: this.povBetaMin,
+                betaMax: this.povBetaMax,
+                rMin: this.povRadiusMin,
+                rMax: this.povRadiusMax
+            });
+            this.debugPovMesh.parent = this;
+            this.debugPovMesh.position = this.povOffset;
         }
         get legCount() {
             return this.legPairCount * 2;

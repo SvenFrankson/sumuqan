@@ -91,6 +91,13 @@ declare namespace Sumuqan {
         leftLegs: Leg[];
         rightLegs: Leg[];
         legs: Leg[];
+        debugPovMesh: BABYLON.Mesh;
+        povOffset: BABYLON.Vector3;
+        povAlpha: number;
+        povBetaMin: number;
+        povBetaMax: number;
+        povRadiusMax: number;
+        povRadiusMin: number;
         private _stepping;
         terrainFilter: (m: BABYLON.AbstractMesh) => boolean;
         constructor(name: string, prop: IPolypodeProps);
