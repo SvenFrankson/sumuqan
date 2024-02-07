@@ -308,12 +308,10 @@ namespace Sumuqan {
         private _update = () => {
             for (let i = 0; i < this.mentalCheckPerFrame; i++) {
                 let distCheck = 1;
-                let origin = this.position.add(this.up.scale(0.1));
+                let origin = this.position.add(this.up.scale(0.3));
                 origin.addInPlace(this.right.scale(-0.1 + 0.2 * Math.random()));
                 origin.addInPlace(this.forward.scale(-0.1 + 0.2 * Math.random()));
-                let dir = this.forward.clone();
-                Mummu.RotateInPlace(dir, this.right, Math.random() * (Math.PI / 1.1));
-                Mummu.RotateInPlace(dir, this.up, - Math.PI / 2 + Math.random() * 2 * Math.PI / 2);
+                let dir = Mummu.RandomInSphereCut(this.forward, - Math.PI / 1.5, Math.PI / 1.5, 0, Math.PI / 2, this.up);
                 let ray = new BABYLON.Ray(origin, dir, distCheck);
                 let hit = this.getScene().pickWithRay(ray, this.terrainFilter);
                 Mummu.DrawDebugLine(ray.origin, ray.origin.add(ray.direction.scale(distCheck)), this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.White());
