@@ -89,6 +89,9 @@ declare namespace Sumuqan {
         private _debugColliderMaterial;
         get debugColliderMaterial(): BABYLON.Material;
         set debugColliderMaterial(mat: BABYLON.Material);
+        private _debugColliderHitMaterial;
+        get debugColliderHitMaterial(): BABYLON.Material;
+        set debugColliderHitMaterial(mat: BABYLON.Material);
         private _debugPovMaterial;
         get debugPovMaterial(): BABYLON.Material;
         set debugPovMaterial(mat: BABYLON.Material);

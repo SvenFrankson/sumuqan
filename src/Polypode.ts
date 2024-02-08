@@ -57,6 +57,16 @@ namespace Sumuqan {
             });
             this._debugColliderMaterial = mat;
         }
+        private _debugColliderHitMaterial: BABYLON.Material;
+        public get debugColliderHitMaterial(): BABYLON.Material {
+            return this._debugColliderHitMaterial;
+        }
+        public set debugColliderHitMaterial(mat: BABYLON.Material) {
+            this.debugBodyCollidersMeshes.forEach(mesh => {
+                mesh.material = mat;
+            });
+            this._debugColliderHitMaterial = mat;
+        }
 
         private _debugPovMaterial: BABYLON.Material;
         public get debugPovMaterial(): BABYLON.Material {
@@ -174,18 +184,6 @@ namespace Sumuqan {
                     this.antennas[1].length = prop.antennaLength;
                 }
             }
-
-            /*
-            for (let i = 0; i < this.legPairCount; i++) {
-                this.rightFootTargets[i] = new BABYLON.Mesh("right-foot-target-" + i);
-                BABYLON.CreateCapsuleVertexData({ radius: 0.005, height: 0.2 }).applyToMesh(this.rightFootTargets[i]);
-                this.rightFootTargets[i].parent = this;
-    
-                this.leftFootTargets[i] = new BABYLON.Mesh("left-foot-target-" + i);
-                BABYLON.CreateCapsuleVertexData({ radius: 0.005, height: 0.2 }).applyToMesh(this.leftFootTargets[i]);
-                this.leftFootTargets[i].parent = this;
-            }
-            */
 
             // Apply properties
             if (Mummu.IsFinite(prop.headAnchor)) {
@@ -544,6 +542,25 @@ namespace Sumuqan {
             Mummu.QuaternionFromZYAxisToRef(this.forward, this.up, this.head.rotationQuaternion);
 
             BABYLON.Vector3.LerpToRef(this.body.position, bodyPos, 0.1, this.body.position);
+
+            // Terrain collision [v]
+            for (let i = 0; i < this.bodyColliders.length; i++) {
+                if (this.showDebug) {
+                    this.debugBodyCollidersMeshes[i].material = this.debugColliderMaterial;
+                }
+                let bodyCollider = this.bodyColliders[i];
+                bodyCollider.recomputeWorldCenter();
+                let intersections = Mummu.SphereCollidersIntersection(bodyCollider.center, bodyCollider.radius, this.terrain);
+                let n = intersections.length;
+                for (let j = 0; j < n; j++) {
+                    let intersection = intersections[j];
+                    this.body.position.addInPlace(intersection.normal.scale(intersection.depth / n));
+                    if (this.showDebug) {
+                        this.debugBodyCollidersMeshes[i].material = this.debugColliderHitMaterial;
+                    }
+                }
+            }
+            // [^] Terrain collision
         }
 
         public updateBodyCollidersMeshes(): void {
