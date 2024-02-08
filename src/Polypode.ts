@@ -58,6 +58,9 @@ namespace Sumuqan {
             this.debugBodyCollidersMeshes.forEach(mesh => {
                 mesh.material = mat;
             });
+            if (this.tail && this.tail.debugColliderMesh) {
+                this.tail.debugColliderMesh.material = mat;
+            }
             this._debugColliderMaterial = mat;
         }
         private _debugColliderHitMaterial: BABYLON.Material;
@@ -65,9 +68,6 @@ namespace Sumuqan {
             return this._debugColliderHitMaterial;
         }
         public set debugColliderHitMaterial(mat: BABYLON.Material) {
-            this.debugBodyCollidersMeshes.forEach(mesh => {
-                mesh.material = mat;
-            });
             this._debugColliderHitMaterial = mat;
         }
 
@@ -405,6 +405,9 @@ namespace Sumuqan {
                 antenna.update(dt);
             })
 
+            if (this.tail) {
+                this.tail.update(dt);
+            }
             
             // Terrain scan [v]
             let origin = BABYLON.Vector3.TransformCoordinates(this.povOffset, this.getWorldMatrix());
@@ -584,6 +587,10 @@ namespace Sumuqan {
                 sphere.parent = collider.parent;
 
                 this.debugBodyCollidersMeshes[i] = sphere;
+            }
+
+            if (this.tail) {
+                this.tail.updateTailColliderMesh();
             }
         }
     }

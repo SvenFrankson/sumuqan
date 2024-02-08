@@ -153,14 +153,17 @@ declare namespace Sumuqan {
     }
     class ScorpionTail extends BABYLON.Mesh {
         polypode: Polypode;
-        alpha0: number;
-        alphaSpeed: number;
-        beta0: number;
-        betaSpeed: number;
+        tailCollider: Mummu.SphereCollider;
+        lace: number;
+        laceSpeed: number;
+        roll: number;
+        rollSpeed: number;
         length: number;
         tailSegments: BABYLON.Mesh[];
+        debugColliderMesh: BABYLON.Mesh;
         constructor(polypode: Polypode, props: IScorpionTailProps);
         update(dt: number): void;
+        updateTailColliderMesh(): void;
     }
 }
 declare namespace Sumuqan {
