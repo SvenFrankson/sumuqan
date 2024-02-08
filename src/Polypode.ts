@@ -23,10 +23,13 @@ namespace Sumuqan {
         bodyLocalOffset?: BABYLON.Vector3;
         bodyWorldOffset?: BABYLON.Vector3;
         headAnchor?: BABYLON.Vector3;
+        
         antennaAnchor?: BABYLON.Vector3;
         antennaAlphaZero?: number;
         antennaBetaZero?: number;
         antennaLength?: number;
+
+        scorpionTailProps?: IScorpionTailProps;
     }
 
     export class Polypode extends BABYLON.Mesh {
@@ -132,6 +135,7 @@ namespace Sumuqan {
         public rightLegs: Leg[] = [];
         public legs: Leg[] = [];
         public antennas: Antenna[] = [];
+        public tail: ScorpionTail;
 
         public povOffset: BABYLON.Vector3 = new BABYLON.Vector3(0, 0.4, 0);
         public povAlpha: number = 5 * Math.PI / 3;
@@ -309,6 +313,10 @@ namespace Sumuqan {
             
             if (Mummu.IsFinite(prop.bodyWorldOffset)) {
                 this.bodyWorldOffset = prop.bodyWorldOffset;
+            }
+
+            if (prop.scorpionTailProps) {
+                this.tail = new ScorpionTail(this, prop.scorpionTailProps);
             }
 
             this.debugPovMesh = Mummu.CreateSphereCut(
@@ -554,7 +562,7 @@ namespace Sumuqan {
                 let n = intersections.length;
                 for (let j = 0; j < n; j++) {
                     let intersection = intersections[j];
-                    this.body.position.addInPlace(intersection.normal.scale(intersection.depth / n));
+                    this.body.position.addInPlace(intersection.normal.scale(0.2 * intersection.depth / n));
                     if (this.showDebug) {
                         this.debugBodyCollidersMeshes[i].material = this.debugColliderHitMaterial;
                     }

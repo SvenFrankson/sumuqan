@@ -77,6 +77,7 @@ declare namespace Sumuqan {
         antennaAlphaZero?: number;
         antennaBetaZero?: number;
         antennaLength?: number;
+        scorpionTailProps?: IScorpionTailProps;
     }
     class Polypode extends BABYLON.Mesh {
         bodyColliders: Mummu.SphereCollider[];
@@ -125,6 +126,7 @@ declare namespace Sumuqan {
         rightLegs: Leg[];
         legs: Leg[];
         antennas: Antenna[];
+        tail: ScorpionTail;
         povOffset: BABYLON.Vector3;
         povAlpha: number;
         povBetaMin: number;
@@ -138,6 +140,27 @@ declare namespace Sumuqan {
         private step;
         private _update;
         updateBodyCollidersMeshes(): void;
+    }
+}
+declare namespace Sumuqan {
+    interface IScorpionTailProps {
+        length: number;
+        anchor?: BABYLON.Vector3;
+        localDir?: BABYLON.Vector3;
+        dist?: number;
+        distances?: number[];
+        distGeometricFactor?: number;
+    }
+    class ScorpionTail extends BABYLON.Mesh {
+        polypode: Polypode;
+        alpha0: number;
+        alphaSpeed: number;
+        beta0: number;
+        betaSpeed: number;
+        length: number;
+        tailSegments: BABYLON.Mesh[];
+        constructor(polypode: Polypode, props: IScorpionTailProps);
+        update(dt: number): void;
     }
 }
 declare namespace Sumuqan {

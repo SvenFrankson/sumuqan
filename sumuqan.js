@@ -320,7 +320,7 @@ var Sumuqan;
                     let n = intersections.length;
                     for (let j = 0; j < n; j++) {
                         let intersection = intersections[j];
-                        this.body.position.addInPlace(intersection.normal.scale(intersection.depth / n));
+                        this.body.position.addInPlace(intersection.normal.scale(0.2 * intersection.depth / n));
                         if (this.showDebug) {
                             this.debugBodyCollidersMeshes[i].material = this.debugColliderHitMaterial;
                         }
@@ -475,6 +475,9 @@ var Sumuqan;
             if (Mummu.IsFinite(prop.bodyWorldOffset)) {
                 this.bodyWorldOffset = prop.bodyWorldOffset;
             }
+            if (prop.scorpionTailProps) {
+                this.tail = new Sumuqan.ScorpionTail(this, prop.scorpionTailProps);
+            }
             this.debugPovMesh = Mummu.CreateSphereCut("debug-pov-mesh", {
                 dir: BABYLON.Vector3.Forward(),
                 alpha: this.povAlpha,
@@ -610,6 +613,83 @@ var Sumuqan;
         }
     }
     Sumuqan.Polypode = Polypode;
+})(Sumuqan || (Sumuqan = {}));
+var Sumuqan;
+(function (Sumuqan) {
+    class ScorpionTail extends BABYLON.Mesh {
+        constructor(polypode, props) {
+            super(polypode.name + "-tail-root");
+            this.polypode = polypode;
+            this.alpha0 = Math.PI / 5;
+            this.alphaSpeed = 0;
+            this.beta0 = Math.PI / 12;
+            this.betaSpeed = 0;
+            this.length = 0.5;
+            this.tailSegments = [];
+            this.parent = this.polypode.body;
+            if (props.anchor) {
+                this.position.copyFrom(props.anchor);
+            }
+            if (props.localDir) {
+                this.rotationQuaternion = Mummu.QuaternionFromZYAxis(props.localDir, BABYLON.Axis.Y);
+            }
+            else {
+                this.rotationQuaternion = Mummu.QuaternionFromZYAxis(new BABYLON.Vector3(0, 0, -1), BABYLON.Axis.Y);
+            }
+            let d = 0.3;
+            if (isFinite(props.dist)) {
+                d = props.dist;
+            }
+            this.tailSegments[0] = new BABYLON.Mesh("tail-0");
+            this.tailSegments[0].parent = this;
+            for (let i = 1; i < props.length; i++) {
+                this.tailSegments[i] = new BABYLON.Mesh("tail-" + i);
+                this.tailSegments[i].parent = this.tailSegments[i - 1];
+                if (props.distances) {
+                    this.tailSegments[i].position.z = props.distances[i];
+                }
+                else {
+                    this.tailSegments[i].position.z = d;
+                    if (isFinite(props.distGeometricFactor)) {
+                        d *= props.distGeometricFactor;
+                    }
+                }
+            }
+        }
+        update(dt) {
+            if (isFinite(dt)) {
+                let dir = this.forward;
+                let ray = new BABYLON.Ray(this.absolutePosition, dir, this.length);
+                let intersection = Mummu.RayCollidersIntersection(ray, this.polypode.terrain);
+                if (intersection.hit) {
+                    let n = intersection.normal;
+                    if (BABYLON.Vector3.Dot(n, this.polypode.up) > 0) {
+                        this.betaSpeed -= Math.PI * 0.2;
+                    }
+                    else {
+                        this.betaSpeed += Math.PI * 0.2;
+                    }
+                    if (BABYLON.Vector3.Dot(n, this.polypode.right) > 0) {
+                        this.alphaSpeed -= Math.PI * 0.2;
+                    }
+                    else {
+                        this.alphaSpeed += Math.PI * 0.2;
+                    }
+                }
+                else {
+                    this.alphaSpeed += 0.1 * (this.alpha0 - this.rotation.y);
+                    this.betaSpeed += 0.1 * (this.beta0 - this.rotation.x);
+                }
+                this.alphaSpeed *= 0.95;
+                this.betaSpeed *= 0.95;
+                this.rotation.x += this.betaSpeed * dt;
+                this.rotation.x = Nabu.MinMax(this.rotation.x, -Math.PI / 2, Math.PI / 2);
+                this.rotation.y += this.alphaSpeed * dt;
+                this.rotation.y = Nabu.MinMax(this.rotation.y, -Math.PI / 3, Math.PI / 3);
+            }
+        }
+    }
+    Sumuqan.ScorpionTail = ScorpionTail;
 })(Sumuqan || (Sumuqan = {}));
 var Sumuqan;
 (function (Sumuqan) {
