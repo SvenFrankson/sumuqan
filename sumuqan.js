@@ -144,6 +144,9 @@ var Sumuqan;
     class Polypode extends BABYLON.Mesh {
         constructor(name, prop) {
             super(name);
+            this.speed = 0;
+            this._fSpeed = 0; // normalized speed between a min and a max (now 0 and 0.5)
+            this.rotationSpeed = 0;
             this.bodyColliders = [];
             this.terrain = [];
             // Debug collision display [v]
@@ -179,13 +182,13 @@ var Sumuqan;
             this._stepping = 0;
             this._update = () => {
                 let dt = this.getScene().deltaTime / 1000;
-                this.antennas.forEach(antenna => {
-                    antenna.update(dt);
-                });
-                if (this.tail) {
-                    this.tail.update(dt);
-                }
+                this._fSpeed = Nabu.MinMax(this.speed / 0.5, 0, 1);
+                this.position.addInPlace(this.forward.scale(this.speed / 60));
+                this.rotate(this.up, this.rotationSpeed / 60, BABYLON.Space.WORLD);
+                this.computeWorldMatrix(true);
+                Mummu.QuaternionFromYZAxisToRef(this.body.up, this.forward, this.rotationQuaternion);
                 // Terrain scan [v]
+                let fFindUp = 0.999 * (1 - this._fSpeed) + 0.98 * this._fSpeed;
                 let origin = BABYLON.Vector3.TransformCoordinates(this.povOffset, this.getWorldMatrix());
                 for (let i = 0; i < this.mentalCheckPerFrame; i++) {
                     let distCheck = this.povRadiusMax;
@@ -198,7 +201,7 @@ var Sumuqan;
                         if (BABYLON.Vector3.Dot(n, this.up) > -0.5) {
                             this.mentalMap[this.mentalMapIndex] = intersection.point;
                             this.mentalMapNormal[this.mentalMapIndex] = n;
-                            this.localNormal.scaleInPlace(0.98).addInPlace(this.mentalMapNormal[this.mentalMapIndex].scale(0.02));
+                            this.localNormal.scaleInPlace(fFindUp).addInPlace(this.mentalMapNormal[this.mentalMapIndex].scale(1 - fFindUp));
                             if (this._showDebug) {
                                 Mummu.DrawDebugHit(intersection.point, this.mentalMapNormal[this.mentalMapIndex], this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.Green());
                             }
@@ -223,65 +226,70 @@ var Sumuqan;
                 }
                 let m = this.computeWorldMatrix(true);
                 if (this._stepping <= 0) {
-                    let legTarget = BABYLON.Vector3.Zero();
-                    let longestStepDist = 0;
-                    let legToMove;
-                    let targetPosition;
-                    let targetNormal;
-                    for (let i = 0; i < this.legPairCount; i++) {
-                        BABYLON.Vector3.TransformCoordinatesToRef(this.rightFootTargets[i], m, legTarget);
-                        let targetRight;
-                        let normalRight;
-                        let closestMentalMapSqrDist = Infinity;
-                        for (let j = 0; j < this.mentalMap.length; j++) {
-                            let mentalPoint = this.mentalMap[j];
-                            let sqrD = BABYLON.Vector3.DistanceSquared(legTarget, mentalPoint);
-                            if (sqrD < closestMentalMapSqrDist) {
-                                if (BABYLON.Vector3.DistanceSquared(this.rightLegs[i].hipPos, mentalPoint) < this.rightLegs[i].totalLength) {
-                                    targetRight = mentalPoint;
-                                    normalRight = this.mentalMapNormal[j];
-                                    closestMentalMapSqrDist = sqrD;
+                    let averageTimeBetweenStep = Nabu.MinMax(2 - 20 * Math.abs(this.speed), 0, 2);
+                    let prob1s = 1 / averageTimeBetweenStep;
+                    let probDT = dt * prob1s;
+                    if (Math.random() < probDT) {
+                        let legTarget = BABYLON.Vector3.Zero();
+                        let longestStepDist = 0;
+                        let legToMove;
+                        let targetPosition;
+                        let targetNormal;
+                        for (let i = 0; i < this.legPairCount; i++) {
+                            BABYLON.Vector3.TransformCoordinatesToRef(this.rightFootTargets[i], m, legTarget);
+                            let targetRight;
+                            let normalRight;
+                            let closestMentalMapSqrDist = Infinity;
+                            for (let j = 0; j < this.mentalMap.length; j++) {
+                                let mentalPoint = this.mentalMap[j];
+                                let sqrD = BABYLON.Vector3.DistanceSquared(legTarget, mentalPoint);
+                                if (sqrD < closestMentalMapSqrDist) {
+                                    if (BABYLON.Vector3.DistanceSquared(this.rightLegs[i].hipPos, mentalPoint) < this.rightLegs[i].totalLength) {
+                                        targetRight = mentalPoint;
+                                        normalRight = this.mentalMapNormal[j];
+                                        closestMentalMapSqrDist = sqrD;
+                                    }
+                                }
+                            }
+                            if (targetRight) {
+                                let d = BABYLON.Vector3.DistanceSquared(this.rightLegs[i].foot.position, targetRight) / this.rightLegs[i].totalLength;
+                                if (d > longestStepDist) {
+                                    longestStepDist = d;
+                                    legToMove = this.rightLegs[i];
+                                    targetPosition = targetRight;
+                                    targetNormal = normalRight;
+                                }
+                            }
+                            BABYLON.Vector3.TransformCoordinatesToRef(this.leftFootTargets[i], m, legTarget);
+                            let targetLeft;
+                            let normalLeft;
+                            closestMentalMapSqrDist = Infinity;
+                            for (let j = 0; j < this.mentalMap.length; j++) {
+                                let mentalPoint = this.mentalMap[j];
+                                let sqrD = BABYLON.Vector3.DistanceSquared(legTarget, mentalPoint);
+                                if (sqrD < closestMentalMapSqrDist) {
+                                    if (BABYLON.Vector3.DistanceSquared(this.leftLegs[i].hipPos, mentalPoint) < this.leftLegs[i].totalLength) {
+                                        targetLeft = mentalPoint;
+                                        normalLeft = this.mentalMapNormal[j];
+                                        closestMentalMapSqrDist = sqrD;
+                                    }
+                                }
+                            }
+                            if (targetLeft) {
+                                let d = BABYLON.Vector3.DistanceSquared(this.leftLegs[i].foot.position, targetLeft) / this.leftLegs[i].totalLength;
+                                if (d > longestStepDist) {
+                                    longestStepDist = d;
+                                    legToMove = this.leftLegs[i];
+                                    targetPosition = targetLeft;
+                                    targetNormal = normalLeft;
                                 }
                             }
                         }
-                        if (targetRight) {
-                            let d = BABYLON.Vector3.DistanceSquared(this.rightLegs[i].foot.position, targetRight) / this.rightLegs[i].totalLength;
-                            if (d > longestStepDist) {
-                                longestStepDist = d;
-                                legToMove = this.rightLegs[i];
-                                targetPosition = targetRight;
-                                targetNormal = normalRight;
-                            }
+                        if (longestStepDist > 0.01) {
+                            this._stepping++;
+                            //Mummu.DrawDebugLine(legToMove.hipPos, targetPosition, 60, BABYLON.Color3.Yellow());
+                            this.step(legToMove, targetPosition, targetNormal.scale(0.3).add(this.up.scale(0.7)), this.forward).then(() => { this._stepping--; });
                         }
-                        BABYLON.Vector3.TransformCoordinatesToRef(this.leftFootTargets[i], m, legTarget);
-                        let targetLeft;
-                        let normalLeft;
-                        closestMentalMapSqrDist = Infinity;
-                        for (let j = 0; j < this.mentalMap.length; j++) {
-                            let mentalPoint = this.mentalMap[j];
-                            let sqrD = BABYLON.Vector3.DistanceSquared(legTarget, mentalPoint);
-                            if (sqrD < closestMentalMapSqrDist) {
-                                if (BABYLON.Vector3.DistanceSquared(this.leftLegs[i].hipPos, mentalPoint) < this.leftLegs[i].totalLength) {
-                                    targetLeft = mentalPoint;
-                                    normalLeft = this.mentalMapNormal[j];
-                                    closestMentalMapSqrDist = sqrD;
-                                }
-                            }
-                        }
-                        if (targetLeft) {
-                            let d = BABYLON.Vector3.DistanceSquared(this.leftLegs[i].foot.position, targetLeft) / this.leftLegs[i].totalLength;
-                            if (d > longestStepDist) {
-                                longestStepDist = d;
-                                legToMove = this.leftLegs[i];
-                                targetPosition = targetLeft;
-                                targetNormal = normalLeft;
-                            }
-                        }
-                    }
-                    if (longestStepDist > 0.01) {
-                        this._stepping++;
-                        //Mummu.DrawDebugLine(legToMove.hipPos, targetPosition, 60, BABYLON.Color3.Yellow());
-                        this.step(legToMove, targetPosition, targetNormal.scale(0.3).add(this.up.scale(0.7)), this.forward).then(() => { this._stepping--; });
                     }
                 }
                 for (let i = 0; i < this.legPairCount; i++) {
@@ -330,6 +338,21 @@ var Sumuqan;
                     }
                 }
                 // [^] Terrain collision
+                // Prevent overstrech [v]
+                let dir = this.position.subtract(this.body.absolutePosition);
+                let l = dir.length();
+                let maxL = 0.3;
+                if (l > maxL) {
+                    dir.scaleInPlace(1 / l);
+                    this.position.copyFrom(dir).scaleInPlace(maxL).addInPlace(this.body.absolutePosition);
+                }
+                this.antennas.forEach(antenna => {
+                    antenna.update(dt);
+                });
+                if (this.tail) {
+                    this.tail.update(dt);
+                }
+                // [^] Prevent overstrech
             };
             this.legPairCount = prop.legPairsCount;
             // Create all required meshes
@@ -575,6 +598,7 @@ var Sumuqan;
                 let dist = 1.5 * BABYLON.Vector3.Distance(origin, destination);
                 let hMax = Math.min(Math.max(this.stepHeightMin, dist), this.stepHeightMax);
                 let duration = Math.min(Math.max(this.stepDurationMin, dist), this.stepDurationMax);
+                duration *= 3 * (1 - this._fSpeed) + 1 * this._fSpeed;
                 let t = 0;
                 let animationCB = () => {
                     t += this.getScene().getEngine().getDeltaTime() / 1000;

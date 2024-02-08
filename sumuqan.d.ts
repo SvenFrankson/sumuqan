@@ -80,6 +80,9 @@ declare namespace Sumuqan {
         scorpionTailProps?: IScorpionTailProps;
     }
     class Polypode extends BABYLON.Mesh {
+        speed: number;
+        private _fSpeed;
+        rotationSpeed: number;
         bodyColliders: Mummu.SphereCollider[];
         terrain: (Mummu.Collider | BABYLON.Mesh)[];
         protected _showDebug: boolean;
