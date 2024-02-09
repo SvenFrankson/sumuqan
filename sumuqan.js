@@ -150,7 +150,8 @@ var Sumuqan;
             this.bodyColliders = [];
             this.terrain = [];
             // Debug collision display [v]
-            this._showDebug = false;
+            this._showCollisionDebug = false;
+            this._showPOVDebug = false;
             this.debugBodyCollidersMeshes = [];
             // [^] Debug collision display
             this.mentalMap = [];
@@ -202,7 +203,7 @@ var Sumuqan;
                             this.mentalMap[this.mentalMapIndex] = intersection.point;
                             this.mentalMapNormal[this.mentalMapIndex] = n;
                             this.localNormal.scaleInPlace(fFindUp).addInPlace(this.mentalMapNormal[this.mentalMapIndex].scale(1 - fFindUp));
-                            if (this._showDebug) {
+                            if (this._showPOVDebug) {
                                 Mummu.DrawDebugHit(intersection.point, this.mentalMapNormal[this.mentalMapIndex], this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.Green());
                             }
                             this.mentalMapIndex = (this.mentalMapIndex + 1) % this.mentalMapMaxSize;
@@ -322,7 +323,7 @@ var Sumuqan;
                 BABYLON.Vector3.LerpToRef(this.body.position, bodyPos, 0.1, this.body.position);
                 // Terrain collision [v]
                 for (let i = 0; i < this.bodyColliders.length; i++) {
-                    if (this.showDebug) {
+                    if (this.showCollisionDebug) {
                         this.debugBodyCollidersMeshes[i].material = this.debugColliderMaterial;
                     }
                     let bodyCollider = this.bodyColliders[i];
@@ -331,8 +332,8 @@ var Sumuqan;
                     let n = intersections.length;
                     for (let j = 0; j < n; j++) {
                         let intersection = intersections[j];
-                        this.body.position.addInPlace(intersection.normal.scale(0.2 * intersection.depth / n));
-                        if (this.showDebug) {
+                        this.body.position.addInPlace(intersection.normal.scale(0.1 * intersection.depth / n));
+                        if (this.showCollisionDebug) {
                             this.debugBodyCollidersMeshes[i].material = this.debugColliderHitMaterial;
                         }
                     }
@@ -514,26 +515,38 @@ var Sumuqan;
             });
             this.debugPovMesh.parent = this;
             this.debugPovMesh.position = this.povOffset;
-            this.debugPovMesh.isVisible = this._showDebug;
+            this.debugPovMesh.isVisible = this._showCollisionDebug;
         }
-        get showDebug() {
-            return this._showDebug;
+        get showCollisionDebug() {
+            return this._showCollisionDebug;
         }
-        set showDebug(v) {
-            this._showDebug = v;
-            this.debugPovMesh.isVisible = this._showDebug;
+        set showCollisionDebug(v) {
+            this._showCollisionDebug = v;
+            this.debugBodyCollidersMeshes.forEach(mesh => {
+                mesh.isVisible = this._showCollisionDebug;
+            });
+            if (this.tail && this.tail.debugColliderMesh) {
+                this.tail.debugColliderMesh.isVisible = this._showCollisionDebug;
+            }
+        }
+        get showPOVDebug() {
+            return this._showPOVDebug;
+        }
+        set showPOVDebug(v) {
+            this._showPOVDebug = v;
+            this.debugPovMesh.isVisible = this._showPOVDebug;
         }
         get debugColliderMaterial() {
             return this._debugColliderMaterial;
         }
         set debugColliderMaterial(mat) {
+            this._debugColliderMaterial = mat;
             this.debugBodyCollidersMeshes.forEach(mesh => {
-                mesh.material = mat;
+                mesh.material = this._debugColliderMaterial;
             });
             if (this.tail && this.tail.debugColliderMesh) {
-                this.tail.debugColliderMesh.material = mat;
+                this.tail.debugColliderMesh.material = this._debugColliderMaterial;
             }
-            this._debugColliderMaterial = mat;
         }
         get debugColliderHitMaterial() {
             return this._debugColliderHitMaterial;
@@ -635,6 +648,7 @@ var Sumuqan;
                 sphere.material = this._debugColliderMaterial;
                 sphere.position.copyFrom(collider.localCenter);
                 sphere.parent = collider.parent;
+                sphere.isVisible = this._showCollisionDebug;
                 this.debugBodyCollidersMeshes[i] = sphere;
             }
             if (this.tail) {
@@ -699,15 +713,15 @@ var Sumuqan;
                         let dir = this.tailCollider.center.subtract(intersection.point).normalize().addInPlace(n).normalize();
                         let dotUp = BABYLON.Vector3.Dot(dir, this.polypode.up);
                         let dotRight = BABYLON.Vector3.Dot(dir, this.polypode.right);
-                        this.rollSpeed += Math.PI * 0.25 * dotUp;
-                        this.laceSpeed -= Math.PI * 0.25 * dotRight;
-                        if (this.polypode.showDebug) {
+                        this.rollSpeed += Math.PI * 0.1 * dotUp;
+                        this.laceSpeed -= Math.PI * 0.1 * dotRight;
+                        if (this.polypode.showCollisionDebug) {
                             this.debugColliderMesh.material = this.polypode.debugColliderHitMaterial;
                         }
                     }
                 }
-                this.laceSpeed -= 0.05 * this.lace;
-                this.rollSpeed -= 0.05 * this.roll;
+                this.laceSpeed -= 0.01 * this.lace;
+                this.rollSpeed -= 0.01 * this.roll;
                 this.laceSpeed *= 0.99;
                 this.rollSpeed *= 0.99;
                 this.roll += this.rollSpeed * dt;
@@ -730,6 +744,7 @@ var Sumuqan;
             this.debugColliderMesh = BABYLON.MeshBuilder.CreateSphere("tail-collider", { diameter: 2 * this.tailCollider.radius });
             this.debugColliderMesh.material = this.polypode.debugColliderMaterial;
             this.debugColliderMesh.parent = this.tailCollider.parent;
+            this.debugColliderMesh.isVisible = this.polypode.showCollisionDebug;
         }
     }
     Sumuqan.ScorpionTail = ScorpionTail;

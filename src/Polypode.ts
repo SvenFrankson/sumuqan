@@ -42,13 +42,26 @@ namespace Sumuqan {
         public terrain: (Mummu.Collider | BABYLON.Mesh)[] = [];
 
         // Debug collision display [v]
-        protected _showDebug: boolean = false;
-        public get showDebug(): boolean {
-            return this._showDebug;
+        protected _showCollisionDebug: boolean = false;
+        public get showCollisionDebug(): boolean {
+            return this._showCollisionDebug;
         }
-        public set showDebug(v: boolean) {
-            this._showDebug = v;
-            this.debugPovMesh.isVisible = this._showDebug;
+        public set showCollisionDebug(v: boolean) {
+            this._showCollisionDebug = v;
+            this.debugBodyCollidersMeshes.forEach(mesh => {
+                mesh.isVisible = this._showCollisionDebug;
+            });
+            if (this.tail && this.tail.debugColliderMesh) {
+                this.tail.debugColliderMesh.isVisible = this._showCollisionDebug;
+            }
+        }
+        protected _showPOVDebug: boolean = false;
+        public get showPOVDebug(): boolean {
+            return this._showPOVDebug;
+        }
+        public set showPOVDebug(v: boolean) {
+            this._showPOVDebug = v;
+            this.debugPovMesh.isVisible = this._showPOVDebug;
         }
 
         public debugPovMesh: BABYLON.Mesh;
@@ -59,13 +72,13 @@ namespace Sumuqan {
             return this._debugColliderMaterial;
         }
         public set debugColliderMaterial(mat: BABYLON.Material) {
+            this._debugColliderMaterial = mat;
             this.debugBodyCollidersMeshes.forEach(mesh => {
-                mesh.material = mat;
+                mesh.material = this._debugColliderMaterial;
             });
             if (this.tail && this.tail.debugColliderMesh) {
-                this.tail.debugColliderMesh.material = mat;
+                this.tail.debugColliderMesh.material = this._debugColliderMaterial;
             }
-            this._debugColliderMaterial = mat;
         }
         private _debugColliderHitMaterial: BABYLON.Material;
         public get debugColliderHitMaterial(): BABYLON.Material {
@@ -336,7 +349,7 @@ namespace Sumuqan {
             )
             this.debugPovMesh.parent = this;
             this.debugPovMesh.position = this.povOffset;
-            this.debugPovMesh.isVisible = this._showDebug;
+            this.debugPovMesh.isVisible = this._showCollisionDebug;
         }
 
         public setPosition(p: BABYLON.Vector3): void {
@@ -427,7 +440,7 @@ namespace Sumuqan {
                         this.mentalMap[this.mentalMapIndex] = intersection.point;
                         this.mentalMapNormal[this.mentalMapIndex] = n;
                         this.localNormal.scaleInPlace(fFindUp).addInPlace(this.mentalMapNormal[this.mentalMapIndex].scale(1 - fFindUp));
-                        if (this._showDebug) {
+                        if (this._showPOVDebug) {
                             Mummu.DrawDebugHit(intersection.point, this.mentalMapNormal[this.mentalMapIndex], this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.Green());
                         }
                         this.mentalMapIndex = (this.mentalMapIndex + 1) % this.mentalMapMaxSize;
@@ -566,7 +579,7 @@ namespace Sumuqan {
 
             // Terrain collision [v]
             for (let i = 0; i < this.bodyColliders.length; i++) {
-                if (this.showDebug) {
+                if (this.showCollisionDebug) {
                     this.debugBodyCollidersMeshes[i].material = this.debugColliderMaterial;
                 }
                 let bodyCollider = this.bodyColliders[i];
@@ -575,8 +588,8 @@ namespace Sumuqan {
                 let n = intersections.length;
                 for (let j = 0; j < n; j++) {
                     let intersection = intersections[j];
-                    this.body.position.addInPlace(intersection.normal.scale(0.2 * intersection.depth / n));
-                    if (this.showDebug) {
+                    this.body.position.addInPlace(intersection.normal.scale(0.1 * intersection.depth / n));
+                    if (this.showCollisionDebug) {
                         this.debugBodyCollidersMeshes[i].material = this.debugColliderHitMaterial;
                     }
                 }
@@ -613,6 +626,7 @@ namespace Sumuqan {
                 sphere.material = this._debugColliderMaterial;
                 sphere.position.copyFrom(collider.localCenter);
                 sphere.parent = collider.parent;
+                sphere.isVisible = this._showCollisionDebug;
 
                 this.debugBodyCollidersMeshes[i] = sphere;
             }

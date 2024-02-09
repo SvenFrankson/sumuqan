@@ -71,17 +71,17 @@ namespace Sumuqan {
                         let dotUp = BABYLON.Vector3.Dot(dir, this.polypode.up);
                         let dotRight = BABYLON.Vector3.Dot(dir, this.polypode.right);
                         
-                        this.rollSpeed += Math.PI * 0.25 * dotUp;
-                        this.laceSpeed -= Math.PI * 0.25 * dotRight;
+                        this.rollSpeed += Math.PI * 0.1 * dotUp;
+                        this.laceSpeed -= Math.PI * 0.1 * dotRight;
 
-                        if (this.polypode.showDebug) {
+                        if (this.polypode.showCollisionDebug) {
                             this.debugColliderMesh.material = this.polypode.debugColliderHitMaterial;
                         }
                     }
                 }
 
-                this.laceSpeed -= 0.05 * this.lace;
-                this.rollSpeed -= 0.05 * this.roll;
+                this.laceSpeed -= 0.01 * this.lace;
+                this.rollSpeed -= 0.01 * this.roll;
 
                 this.laceSpeed *= 0.99;
                 this.rollSpeed *= 0.99;
@@ -108,6 +108,7 @@ namespace Sumuqan {
             this.debugColliderMesh = BABYLON.MeshBuilder.CreateSphere("tail-collider", { diameter: 2 * this.tailCollider.radius });
             this.debugColliderMesh.material = this.polypode.debugColliderMaterial;
             this.debugColliderMesh.parent = this.tailCollider.parent;
+            this.debugColliderMesh.isVisible = this.polypode.showCollisionDebug;
         }
     }
 }

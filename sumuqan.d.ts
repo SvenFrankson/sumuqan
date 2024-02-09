@@ -85,9 +85,12 @@ declare namespace Sumuqan {
         rotationSpeed: number;
         bodyColliders: Mummu.SphereCollider[];
         terrain: (Mummu.Collider | BABYLON.Mesh)[];
-        protected _showDebug: boolean;
-        get showDebug(): boolean;
-        set showDebug(v: boolean);
+        protected _showCollisionDebug: boolean;
+        get showCollisionDebug(): boolean;
+        set showCollisionDebug(v: boolean);
+        protected _showPOVDebug: boolean;
+        get showPOVDebug(): boolean;
+        set showPOVDebug(v: boolean);
         debugPovMesh: BABYLON.Mesh;
         debugBodyCollidersMeshes: BABYLON.Mesh[];
         private _debugColliderMaterial;
