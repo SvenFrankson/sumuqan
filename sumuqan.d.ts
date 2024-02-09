@@ -164,6 +164,7 @@ declare namespace Sumuqan {
         laceSpeed: number;
         roll: number;
         rollSpeed: number;
+        roll0: number;
         length: number;
         tailSegments: BABYLON.Mesh[];
         debugColliderMesh: BABYLON.Mesh;

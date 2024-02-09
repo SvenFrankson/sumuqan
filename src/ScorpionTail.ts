@@ -17,6 +17,7 @@ namespace Sumuqan {
         public laceSpeed: number = 0;
         public roll: number = 0;
         public rollSpeed: number = 0;
+        public roll0: number = 0;
         public length: number = 0.5;
 
         public tailSegments: BABYLON.Mesh[] = [];
@@ -55,6 +56,12 @@ namespace Sumuqan {
                     }
                 }
             }
+
+            let updateTailRollTarget = () => {
+                this.roll0 = Math.PI / 2 * Math.random();
+                setTimeout(updateTailRollTarget, 5000 + Math.random() * 15000);
+            }
+            updateTailRollTarget();
         }
 
         public update(dt: number): void {
@@ -81,13 +88,13 @@ namespace Sumuqan {
                 }
 
                 this.laceSpeed -= 0.01 * this.lace;
-                this.rollSpeed -= 0.01 * this.roll;
+                this.rollSpeed -= 0.01 * (this.roll - this.roll0);
 
-                this.laceSpeed *= 0.99;
-                this.rollSpeed *= 0.99;
+                this.laceSpeed *= 0.95;
+                this.rollSpeed *= 0.95;
     
                 this.roll += this.rollSpeed * dt;
-                this.roll = Nabu.MinMax(this.roll, - Math.PI / 2, Math.PI / 2);
+                this.roll = Nabu.MinMax(this.roll, 0, Math.PI / 2);
                 this.lace += this.laceSpeed * dt;
                 this.lace = Nabu.MinMax(this.lace, - Math.PI / 3, Math.PI / 3);
 

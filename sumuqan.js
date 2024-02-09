@@ -668,6 +668,7 @@ var Sumuqan;
             this.laceSpeed = 0;
             this.roll = 0;
             this.rollSpeed = 0;
+            this.roll0 = 0;
             this.length = 0.5;
             this.tailSegments = [];
             this.parent = this.polypode.body;
@@ -699,6 +700,11 @@ var Sumuqan;
                     }
                 }
             }
+            let updateTailRollTarget = () => {
+                this.roll0 = Math.PI / 2 * Math.random();
+                setTimeout(updateTailRollTarget, 5000 + Math.random() * 15000);
+            };
+            updateTailRollTarget();
         }
         update(dt) {
             if (isFinite(dt)) {
@@ -721,11 +727,11 @@ var Sumuqan;
                     }
                 }
                 this.laceSpeed -= 0.01 * this.lace;
-                this.rollSpeed -= 0.01 * this.roll;
-                this.laceSpeed *= 0.99;
-                this.rollSpeed *= 0.99;
+                this.rollSpeed -= 0.01 * (this.roll - this.roll0);
+                this.laceSpeed *= 0.95;
+                this.rollSpeed *= 0.95;
                 this.roll += this.rollSpeed * dt;
-                this.roll = Nabu.MinMax(this.roll, -Math.PI / 2, Math.PI / 2);
+                this.roll = Nabu.MinMax(this.roll, 0, Math.PI / 2);
                 this.lace += this.laceSpeed * dt;
                 this.lace = Nabu.MinMax(this.lace, -Math.PI / 3, Math.PI / 3);
                 this.tailSegments[0].rotation.x = -Math.PI / 5 * this.roll;
