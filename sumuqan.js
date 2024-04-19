@@ -76,6 +76,7 @@ var Sumuqan;
             this.right = new BABYLON.Vector3(1, 0, 0);
             this.up = new BABYLON.Vector3(0, 1, 0);
             this.forward = new BABYLON.Vector3(0, 0, 1);
+            this.grounded = false;
             this._scale = 1;
             this._upperLegZ = BABYLON.Vector3.Forward();
             this._lowerLegZ = BABYLON.Vector3.Forward();
@@ -289,7 +290,10 @@ var Sumuqan;
                         if (longestStepDist > 0.01) {
                             this._stepping++;
                             //Mummu.DrawDebugLine(legToMove.hipPos, targetPosition, 60, BABYLON.Color3.Yellow());
-                            this.step(legToMove, targetPosition, targetNormal.scale(0.3).add(this.up.scale(0.7)), this.forward).then(() => { this._stepping--; });
+                            this.step(legToMove, targetPosition, targetNormal.scale(0.3).add(this.up.scale(0.7)), this.forward).then(() => {
+                                legToMove.grounded = true;
+                                this._stepping--;
+                            });
                         }
                     }
                 }
@@ -322,6 +326,7 @@ var Sumuqan;
                 Mummu.QuaternionFromZYAxisToRef(this.forward, this.up, this.head.rotationQuaternion);
                 BABYLON.Vector3.LerpToRef(this.body.position, bodyPos, 0.1, this.body.position);
                 // Terrain collision [v]
+                let collideWithTerrain = false;
                 for (let i = 0; i < this.bodyColliders.length; i++) {
                     if (this.showCollisionDebug) {
                         this.debugBodyCollidersMeshes[i].material = this.debugColliderMaterial;
@@ -332,9 +337,19 @@ var Sumuqan;
                     let n = intersections.length;
                     for (let j = 0; j < n; j++) {
                         let intersection = intersections[j];
-                        this.body.position.addInPlace(intersection.normal.scale(0.1 * intersection.depth / n));
-                        if (this.showCollisionDebug) {
-                            this.debugBodyCollidersMeshes[i].material = this.debugColliderHitMaterial;
+                        if (intersection.hit) {
+                            collideWithTerrain = true;
+                            this.body.position.addInPlace(intersection.normal.scale(0.1 * intersection.depth / n));
+                            if (this.showCollisionDebug) {
+                                this.debugBodyCollidersMeshes[i].material = this.debugColliderHitMaterial;
+                            }
+                        }
+                    }
+                }
+                if (!collideWithTerrain) {
+                    for (let i = 0; i < this.legCount; i++) {
+                        if (!this.legs[i].grounded) {
+                            this.legs[i].footPos.y -= 1 * dt;
                         }
                     }
                 }
@@ -599,6 +614,14 @@ var Sumuqan;
         }
         async initialize() {
             this.getScene().onBeforeRenderObservable.add(this._update);
+        }
+        isGrounded() {
+            for (let i = 0; i < this.legs.length; i++) {
+                if (this.legs[i].grounded) {
+                    return true;
+                }
+            }
+            return false;
         }
         async step(leg, target, targetNorm, targetForward) {
             return new Promise(resolve => {

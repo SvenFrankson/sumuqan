@@ -36,6 +36,8 @@ namespace Sumuqan {
         public up: BABYLON.Vector3 = new BABYLON.Vector3(0, 1, 0);
         public forward: BABYLON.Vector3 = new BABYLON.Vector3(0, 0, 1);
 
+        public grounded: boolean = false;
+
         private _scale: number = 1;
         public get scale(): number {
             return this._scale;

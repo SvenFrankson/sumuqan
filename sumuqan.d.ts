@@ -39,6 +39,7 @@ declare namespace Sumuqan {
         right: BABYLON.Vector3;
         up: BABYLON.Vector3;
         forward: BABYLON.Vector3;
+        grounded: boolean;
         private _scale;
         get scale(): number;
         set scale(s: number);
@@ -143,6 +144,7 @@ declare namespace Sumuqan {
         constructor(name: string, prop: IPolypodeProps);
         setPosition(p: BABYLON.Vector3): void;
         initialize(): Promise<void>;
+        isGrounded(): boolean;
         private step;
         private _update;
         updateBodyCollidersMeshes(): void;

@@ -377,6 +377,15 @@ namespace Sumuqan {
             this.getScene().onBeforeRenderObservable.add(this._update);
         }
 
+        public isGrounded(): boolean {
+            for (let i = 0; i < this.legs.length; i++) {
+                if (this.legs[i].grounded) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private async step(leg: Leg, target: BABYLON.Vector3, targetNorm: BABYLON.Vector3, targetForward: BABYLON.Vector3): Promise<void> {
             return new Promise<void>(resolve => {
                 let origin = leg.footPos.clone();
@@ -537,7 +546,12 @@ namespace Sumuqan {
                     if (longestStepDist > 0.01) {
                         this._stepping++;
                         //Mummu.DrawDebugLine(legToMove.hipPos, targetPosition, 60, BABYLON.Color3.Yellow());
-                        this.step(legToMove, targetPosition, targetNormal.scale(0.3).add(this.up.scale(0.7)), this.forward).then(() => { this._stepping--; });
+                        this.step(legToMove, targetPosition, targetNormal.scale(0.3).add(this.up.scale(0.7)), this.forward).then(
+                            () => {
+                                legToMove.grounded = true;
+                                this._stepping--;
+                            }
+                        );
                     } 
                 }
             }
@@ -578,6 +592,7 @@ namespace Sumuqan {
             BABYLON.Vector3.LerpToRef(this.body.position, bodyPos, 0.1, this.body.position);
 
             // Terrain collision [v]
+            let collideWithTerrain = false;
             for (let i = 0; i < this.bodyColliders.length; i++) {
                 if (this.showCollisionDebug) {
                     this.debugBodyCollidersMeshes[i].material = this.debugColliderMaterial;
@@ -588,9 +603,19 @@ namespace Sumuqan {
                 let n = intersections.length;
                 for (let j = 0; j < n; j++) {
                     let intersection = intersections[j];
-                    this.body.position.addInPlace(intersection.normal.scale(0.1 * intersection.depth / n));
-                    if (this.showCollisionDebug) {
-                        this.debugBodyCollidersMeshes[i].material = this.debugColliderHitMaterial;
+                    if (intersection.hit) {
+                        collideWithTerrain = true;
+                        this.body.position.addInPlace(intersection.normal.scale(0.1 * intersection.depth / n));
+                        if (this.showCollisionDebug) {
+                            this.debugBodyCollidersMeshes[i].material = this.debugColliderHitMaterial;
+                        }
+                    }
+                }
+            }
+            if (!collideWithTerrain) {
+                for (let i = 0; i < this.legCount; i++) {
+                    if (!this.legs[i].grounded) {
+                        this.legs[i].footPos.y -= 1 * dt;
                     }
                 }
             }
