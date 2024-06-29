@@ -7,7 +7,8 @@ namespace Sumuqan {
     export enum KneeMode {
         Backward,
         Vertical,
-        Outward
+        Outward,
+        Walker
     }
 
     export class Leg {
@@ -61,27 +62,32 @@ namespace Sumuqan {
         private _upperLegZ: BABYLON.Vector3 = BABYLON.Vector3.Forward();
         private _lowerLegZ: BABYLON.Vector3 = BABYLON.Vector3.Forward();
         private _kneePos: BABYLON.Vector3 = BABYLON.Vector3.Zero();
+        private _raisedFootPos: BABYLON.Vector3 = BABYLON.Vector3.Zero();
         public updatePositions(): void {
+            this._raisedFootPos.copyFrom(this.footUp).scaleInPlace(this.footThickness).addInPlace(this.footPos);
             if (this.initialKneePos) {
                 this._kneePos.copyFrom(this.initialKneePos);
             }
             else if (this.kneeMode === KneeMode.Backward) {
-                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace(this.footUp.normalize()).subtractInPlace(this.forward).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
+                this._kneePos.copyFrom(this.hipPos).addInPlace(this._raisedFootPos).scaleInPlace(0.5).addInPlace(this.footUp.normalize()).subtractInPlace(this.forward).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
             }
             else if (this.kneeMode === KneeMode.Vertical) {
-                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace(this.footUp.normalize());
+                this._kneePos.copyFrom(this.hipPos).addInPlace(this._raisedFootPos).scaleInPlace(0.5).addInPlace(this.footUp.normalize());
             }
             else if (this.kneeMode === KneeMode.Outward) {
-                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
+                this._kneePos.copyFrom(this.hipPos).addInPlace(this._raisedFootPos).scaleInPlace(0.5).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
+            }
+            else if (this.kneeMode === KneeMode.Walker) {
+                this._kneePos.copyFrom(this.hipPos).addInPlace(this._raisedFootPos).scaleInPlace(0.5).subtractInPlace(this.forward).addInPlace(this.right.scale(this.isLeftLeg ? - 0.3 : 0.3));
             }
             
             for (let n = 0; n < 2; n++) {
-                Mummu.ForceDistanceFromOriginInPlace(this._kneePos, this.footPos, this.lowerLegLength * this.scale);
+                Mummu.ForceDistanceFromOriginInPlace(this._kneePos, this._raisedFootPos, this.lowerLegLength * this.scale);
                 Mummu.ForceDistanceFromOriginInPlace(this._kneePos, this.hipPos, this.upperLegLength * this.scale);
             }
 
             this._upperLegZ.copyFrom(this._kneePos).subtractInPlace(this.hipPos).normalize();
-            this._lowerLegZ.copyFrom(this.footPos).subtractInPlace(this._kneePos).normalize();
+            this._lowerLegZ.copyFrom(this._raisedFootPos).subtractInPlace(this._kneePos).normalize();
 
             this.upperLeg.position.copyFrom(this.hipPos);
             Mummu.QuaternionFromZYAxisToRef(this._upperLegZ, this.up, this.upperLeg.rotationQuaternion);
@@ -98,6 +104,9 @@ namespace Sumuqan {
             }
             else if (this.kneeMode === KneeMode.Outward) {
                 Mummu.QuaternionFromZYAxisToRef(this._lowerLegZ, this._upperLegZ, this.lowerLeg.rotationQuaternion);
+            }
+            else if (this.kneeMode === KneeMode.Walker) {
+                Mummu.QuaternionFromZYAxisToRef(this._lowerLegZ, this._upperLegZ.scale(-1), this.lowerLeg.rotationQuaternion);
             }
             
             this._lowerLegZ.scaleInPlace(this.lowerLegLength * this.scale);

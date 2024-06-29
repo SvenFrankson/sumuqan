@@ -427,10 +427,13 @@ namespace Sumuqan {
 
         private _update = () => {
             let dt = this.getScene().deltaTime / 1000;
+            if (isNaN(dt)) {
+                return;
+            }
             this._fSpeed = Nabu.MinMax(this.speed / 0.5, 0, 1);
 
-            this.position.addInPlace(this.forward.scale(this.speed / 60));
-            this.rotate(this.up, this.rotationSpeed / 60, BABYLON.Space.WORLD);
+            this.position.addInPlace(this.forward.scale(this.speed * dt));
+            this.rotate(this.up, this.rotationSpeed * dt, BABYLON.Space.WORLD);
             this.computeWorldMatrix(true);
             Mummu.QuaternionFromYZAxisToRef(this.body.up, this.forward, this.rotationQuaternion);
             
@@ -450,7 +453,7 @@ namespace Sumuqan {
                         this.mentalMapNormal[this.mentalMapIndex] = n;
                         this.localNormal.scaleInPlace(fFindUp).addInPlace(this.mentalMapNormal[this.mentalMapIndex].scale(1 - fFindUp));
                         if (this._showPOVDebug) {
-                            Mummu.DrawDebugHit(intersection.point, this.mentalMapNormal[this.mentalMapIndex], this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.Green());
+                            //Mummu.DrawDebugHit(intersection.point, this.mentalMapNormal[this.mentalMapIndex], this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.Green());
                         }
                         this.mentalMapIndex = (this.mentalMapIndex + 1) % this.mentalMapMaxSize;
                     }
@@ -491,6 +494,7 @@ namespace Sumuqan {
                     for (let i = 0; i < this.legPairCount; i++) {
 
                         BABYLON.Vector3.TransformCoordinatesToRef(this.rightFootTargets[i], m, legTarget);
+                        //Mummu.DrawDebugPoint(legTarget, 60, BABYLON.Color3.Red(), 1);
                         let targetRight: BABYLON.Vector3;
                         let normalRight: BABYLON.Vector3;
                         let closestMentalMapSqrDist = Infinity;
@@ -499,7 +503,7 @@ namespace Sumuqan {
                             let mentalPoint = this.mentalMap[j];
                             let sqrD = BABYLON.Vector3.DistanceSquared(legTarget, mentalPoint);
                             if (sqrD < closestMentalMapSqrDist) {
-                                if (BABYLON.Vector3.DistanceSquared(this.rightLegs[i].hipPos, mentalPoint) < this.rightLegs[i].totalLength) {
+                                if (BABYLON.Vector3.DistanceSquared(this.rightLegs[i].hipPos, mentalPoint) < this.rightLegs[i].totalLength * 2) {
                                     targetRight = mentalPoint;
                                     normalRight = this.mentalMapNormal[j];
                                     closestMentalMapSqrDist = sqrD;
@@ -517,6 +521,7 @@ namespace Sumuqan {
                         }
 
                         BABYLON.Vector3.TransformCoordinatesToRef(this.leftFootTargets[i], m, legTarget);
+                        //Mummu.DrawDebugPoint(legTarget, 60, BABYLON.Color3.Blue(), 1);
                         let targetLeft: BABYLON.Vector3;
                         let normalLeft: BABYLON.Vector3;
                         closestMentalMapSqrDist = Infinity;
@@ -525,7 +530,7 @@ namespace Sumuqan {
                             let mentalPoint = this.mentalMap[j];
                             let sqrD = BABYLON.Vector3.DistanceSquared(legTarget, mentalPoint);
                             if (sqrD < closestMentalMapSqrDist) {
-                                if (BABYLON.Vector3.DistanceSquared(this.leftLegs[i].hipPos, mentalPoint) < this.leftLegs[i].totalLength) {
+                                if (BABYLON.Vector3.DistanceSquared(this.leftLegs[i].hipPos, mentalPoint) < this.leftLegs[i].totalLength * 2) {
                                     targetLeft = mentalPoint;
                                     normalLeft = this.mentalMapNormal[j];
                                     closestMentalMapSqrDist = sqrD;
@@ -615,7 +620,7 @@ namespace Sumuqan {
             if (!collideWithTerrain) {
                 for (let i = 0; i < this.legCount; i++) {
                     if (!this.legs[i].grounded) {
-                        this.legs[i].footPos.y -= 1 * dt;
+                        //this.legs[i].footPos.y -= 1 * dt;
                     }
                 }
             }
@@ -624,7 +629,7 @@ namespace Sumuqan {
             // Prevent overstrech [v]
             let dir = this.position.subtract(this.body.absolutePosition);
             let l = dir.length();
-            let maxL = 0.3;
+            let maxL = 1;
             if (l > maxL) {
                 dir.scaleInPlace(1 / l);
                 this.position.copyFrom(dir).scaleInPlace(maxL).addInPlace(this.body.absolutePosition);

@@ -60,6 +60,7 @@ var Sumuqan;
         KneeMode[KneeMode["Backward"] = 0] = "Backward";
         KneeMode[KneeMode["Vertical"] = 1] = "Vertical";
         KneeMode[KneeMode["Outward"] = 2] = "Outward";
+        KneeMode[KneeMode["Walker"] = 3] = "Walker";
     })(KneeMode = Sumuqan.KneeMode || (Sumuqan.KneeMode = {}));
     class Leg {
         constructor(isLeftLeg) {
@@ -81,6 +82,7 @@ var Sumuqan;
             this._upperLegZ = BABYLON.Vector3.Forward();
             this._lowerLegZ = BABYLON.Vector3.Forward();
             this._kneePos = BABYLON.Vector3.Zero();
+            this._raisedFootPos = BABYLON.Vector3.Zero();
             this.foot = new BABYLON.Mesh("foot");
             this.foot.rotationQuaternion = BABYLON.Quaternion.Identity();
             this.lowerLeg = new BABYLON.Mesh("lower-leg");
@@ -101,24 +103,28 @@ var Sumuqan;
             this.foot.scaling.copyFromFloats(this.scale, this.scale, this.scale);
         }
         updatePositions() {
+            this._raisedFootPos.copyFrom(this.footUp).scaleInPlace(this.footThickness).addInPlace(this.footPos);
             if (this.initialKneePos) {
                 this._kneePos.copyFrom(this.initialKneePos);
             }
             else if (this.kneeMode === KneeMode.Backward) {
-                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace(this.footUp.normalize()).subtractInPlace(this.forward).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
+                this._kneePos.copyFrom(this.hipPos).addInPlace(this._raisedFootPos).scaleInPlace(0.5).addInPlace(this.footUp.normalize()).subtractInPlace(this.forward).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
             }
             else if (this.kneeMode === KneeMode.Vertical) {
-                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace(this.footUp.normalize());
+                this._kneePos.copyFrom(this.hipPos).addInPlace(this._raisedFootPos).scaleInPlace(0.5).addInPlace(this.footUp.normalize());
             }
             else if (this.kneeMode === KneeMode.Outward) {
-                this._kneePos.copyFrom(this.hipPos).addInPlace(this.footPos).scaleInPlace(0.5).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
+                this._kneePos.copyFrom(this.hipPos).addInPlace(this._raisedFootPos).scaleInPlace(0.5).addInPlace(this.right.scale(this.isLeftLeg ? -1 : 1));
+            }
+            else if (this.kneeMode === KneeMode.Walker) {
+                this._kneePos.copyFrom(this.hipPos).addInPlace(this._raisedFootPos).scaleInPlace(0.5).subtractInPlace(this.forward).addInPlace(this.right.scale(this.isLeftLeg ? -0.3 : 0.3));
             }
             for (let n = 0; n < 2; n++) {
-                Mummu.ForceDistanceFromOriginInPlace(this._kneePos, this.footPos, this.lowerLegLength * this.scale);
+                Mummu.ForceDistanceFromOriginInPlace(this._kneePos, this._raisedFootPos, this.lowerLegLength * this.scale);
                 Mummu.ForceDistanceFromOriginInPlace(this._kneePos, this.hipPos, this.upperLegLength * this.scale);
             }
             this._upperLegZ.copyFrom(this._kneePos).subtractInPlace(this.hipPos).normalize();
-            this._lowerLegZ.copyFrom(this.footPos).subtractInPlace(this._kneePos).normalize();
+            this._lowerLegZ.copyFrom(this._raisedFootPos).subtractInPlace(this._kneePos).normalize();
             this.upperLeg.position.copyFrom(this.hipPos);
             Mummu.QuaternionFromZYAxisToRef(this._upperLegZ, this.up, this.upperLeg.rotationQuaternion);
             this._upperLegZ.scaleInPlace(this.upperLegLength * this.scale);
@@ -132,6 +138,9 @@ var Sumuqan;
             }
             else if (this.kneeMode === KneeMode.Outward) {
                 Mummu.QuaternionFromZYAxisToRef(this._lowerLegZ, this._upperLegZ, this.lowerLeg.rotationQuaternion);
+            }
+            else if (this.kneeMode === KneeMode.Walker) {
+                Mummu.QuaternionFromZYAxisToRef(this._lowerLegZ, this._upperLegZ.scale(-1), this.lowerLeg.rotationQuaternion);
             }
             this._lowerLegZ.scaleInPlace(this.lowerLegLength * this.scale);
             this.foot.position.copyFrom(this.lowerLeg.position).addInPlace(this._lowerLegZ);
@@ -184,9 +193,12 @@ var Sumuqan;
             this._stepping = 0;
             this._update = () => {
                 let dt = this.getScene().deltaTime / 1000;
+                if (isNaN(dt)) {
+                    return;
+                }
                 this._fSpeed = Nabu.MinMax(this.speed / 0.5, 0, 1);
-                this.position.addInPlace(this.forward.scale(this.speed / 60));
-                this.rotate(this.up, this.rotationSpeed / 60, BABYLON.Space.WORLD);
+                this.position.addInPlace(this.forward.scale(this.speed * dt));
+                this.rotate(this.up, this.rotationSpeed * dt, BABYLON.Space.WORLD);
                 this.computeWorldMatrix(true);
                 Mummu.QuaternionFromYZAxisToRef(this.body.up, this.forward, this.rotationQuaternion);
                 // Terrain scan [v]
@@ -205,7 +217,7 @@ var Sumuqan;
                             this.mentalMapNormal[this.mentalMapIndex] = n;
                             this.localNormal.scaleInPlace(fFindUp).addInPlace(this.mentalMapNormal[this.mentalMapIndex].scale(1 - fFindUp));
                             if (this._showPOVDebug) {
-                                Mummu.DrawDebugHit(intersection.point, this.mentalMapNormal[this.mentalMapIndex], this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.Green());
+                                //Mummu.DrawDebugHit(intersection.point, this.mentalMapNormal[this.mentalMapIndex], this.mentalMapMaxSize / this.mentalCheckPerFrame, BABYLON.Color3.Green());
                             }
                             this.mentalMapIndex = (this.mentalMapIndex + 1) % this.mentalMapMaxSize;
                         }
@@ -239,6 +251,7 @@ var Sumuqan;
                         let targetNormal;
                         for (let i = 0; i < this.legPairCount; i++) {
                             BABYLON.Vector3.TransformCoordinatesToRef(this.rightFootTargets[i], m, legTarget);
+                            //Mummu.DrawDebugPoint(legTarget, 60, BABYLON.Color3.Red(), 1);
                             let targetRight;
                             let normalRight;
                             let closestMentalMapSqrDist = Infinity;
@@ -246,7 +259,7 @@ var Sumuqan;
                                 let mentalPoint = this.mentalMap[j];
                                 let sqrD = BABYLON.Vector3.DistanceSquared(legTarget, mentalPoint);
                                 if (sqrD < closestMentalMapSqrDist) {
-                                    if (BABYLON.Vector3.DistanceSquared(this.rightLegs[i].hipPos, mentalPoint) < this.rightLegs[i].totalLength) {
+                                    if (BABYLON.Vector3.DistanceSquared(this.rightLegs[i].hipPos, mentalPoint) < this.rightLegs[i].totalLength * 2) {
                                         targetRight = mentalPoint;
                                         normalRight = this.mentalMapNormal[j];
                                         closestMentalMapSqrDist = sqrD;
@@ -263,6 +276,7 @@ var Sumuqan;
                                 }
                             }
                             BABYLON.Vector3.TransformCoordinatesToRef(this.leftFootTargets[i], m, legTarget);
+                            //Mummu.DrawDebugPoint(legTarget, 60, BABYLON.Color3.Blue(), 1);
                             let targetLeft;
                             let normalLeft;
                             closestMentalMapSqrDist = Infinity;
@@ -270,7 +284,7 @@ var Sumuqan;
                                 let mentalPoint = this.mentalMap[j];
                                 let sqrD = BABYLON.Vector3.DistanceSquared(legTarget, mentalPoint);
                                 if (sqrD < closestMentalMapSqrDist) {
-                                    if (BABYLON.Vector3.DistanceSquared(this.leftLegs[i].hipPos, mentalPoint) < this.leftLegs[i].totalLength) {
+                                    if (BABYLON.Vector3.DistanceSquared(this.leftLegs[i].hipPos, mentalPoint) < this.leftLegs[i].totalLength * 2) {
                                         targetLeft = mentalPoint;
                                         normalLeft = this.mentalMapNormal[j];
                                         closestMentalMapSqrDist = sqrD;
@@ -349,7 +363,7 @@ var Sumuqan;
                 if (!collideWithTerrain) {
                     for (let i = 0; i < this.legCount; i++) {
                         if (!this.legs[i].grounded) {
-                            this.legs[i].footPos.y -= 1 * dt;
+                            //this.legs[i].footPos.y -= 1 * dt;
                         }
                     }
                 }
@@ -357,7 +371,7 @@ var Sumuqan;
                 // Prevent overstrech [v]
                 let dir = this.position.subtract(this.body.absolutePosition);
                 let l = dir.length();
-                let maxL = 0.3;
+                let maxL = 1;
                 if (l > maxL) {
                     dir.scaleInPlace(1 / l);
                     this.position.copyFrom(dir).scaleInPlace(maxL).addInPlace(this.body.absolutePosition);

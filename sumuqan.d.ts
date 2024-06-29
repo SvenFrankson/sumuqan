@@ -18,7 +18,8 @@ declare namespace Sumuqan {
     enum KneeMode {
         Backward = 0,
         Vertical = 1,
-        Outward = 2
+        Outward = 2,
+        Walker = 3
     }
     class Leg {
         isLeftLeg?: boolean;
@@ -47,6 +48,7 @@ declare namespace Sumuqan {
         private _upperLegZ;
         private _lowerLegZ;
         private _kneePos;
+        private _raisedFootPos;
         updatePositions(): void;
     }
 }
